@@ -3,7 +3,8 @@
 {
 	"name": "Python 3",
 	// Or use a Dockerfile or Docker Compose file. More info: https://containers.dev/guide/dockerfile
-	"image": "mcr.microsoft.com/devcontainers/python:3-3.14-trixie"
+	"image": "mcr.microsoft.com/devcontainers/python:3-3.12-bookworm",
+	"postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh"
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
 	// "features": {},
