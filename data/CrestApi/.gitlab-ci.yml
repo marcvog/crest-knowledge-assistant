@@ -1,0 +1,201 @@
+variables:
+    VERSION: "6.2.6"
+    IMAGE: "crestapi"
+     # Overriding the variables from the template files.
+    TESTS_DIR: test
+    CRESTCMD_TOKEN: "glptt-9ffbdcc35204ecf68894a0b7d933cb8c922d3f2a"
+    GIT_SUBMODULE_STRATEGY: none
+
+include:
+  - project : 'ci-tools/container-image-ci-templates'
+    file : 'kaniko-image.gitlab-ci.yml'
+    ref: master
+
+stages:
+  - check_current_version
+  - lint
+  - fix
+  - build_docker_image
+  - unittest
+  - test
+  - compile-crestcmd
+
+check-version:
+  stage: check_current_version
+  image: registry.cern.ch/docker.io/library/fedora:latest
+  before_script:
+    - dnf install -y skopeo jq
+  script:
+    - ./scripts/check_current_version.sh
+  only:
+    - merge_requests
+
+# Define a job to run pre-commit hooks
+pre-commit:
+  stage: lint
+  image: registry.cern.ch/docker.io/python:3.9  # Use an appropriate Docker image with Python
+  before_script:
+    - |
+      set -x
+      python -m venv ${CI_PROJECT_DIR}/.cache/pre-commit-venv
+      . ${CI_PROJECT_DIR}/.cache/pre-commit-venv/bin/activate
+      pip install pre-commit
+  script:
+    - pre-commit run --all-files  # Run pre-commit on all files
+  only:
+    - merge_requests  # Optionally, run this job only on merge requests
+auto-fix:
+  stage: fix
+  image: registry.cern.ch/docker.io/python:3.9
+  variables:
+    PRE_COMMIT_HOME: ${CI_PROJECT_DIR}/.cache/pre-commit
+  cache:
+    paths:
+      - ${PRE_COMMIT_HOME}
+  before_script:
+    - |
+      set -x
+      python -m venv ${CI_PROJECT_DIR}/.cache/pre-commit-venv
+      . ${CI_PROJECT_DIR}/.cache/pre-commit-venv/bin/activate
+      pip install pre-commit
+  script:
+    - | 
+      set -x
+      pre-commit run --all-files || true 
+      git remote set-url origin "https://oauth2:${GITLAB_PUSH_TOKEN}@gitlab.cern.ch/crest-db/CrestApi.git"
+      git config --global user.name "GitLab CI"
+      git config --global user.email "noreply@cern.ch"
+      git checkout -B auto-fix-branch  
+      git add .
+      git commit -m "Auto-fix: Apply formatting corrections" 
+      git push origin auto-fix-branch  
+  needs: ["pre-commit"]
+  when: on_failure
+  only:
+    - merge_requests  # Optionally, run this job only on merge requests
+
+build_container_job:
+  stage: build_docker_image
+  extends: .build_kaniko
+  variables:
+    REGISTRY_IMAGE_PATH : "registry.cern.ch/crest/$IMAGE:$VERSION"
+    CONTEXT_DIR: ""
+    PUSH_IMAGE: "true"
+    DOCKER_FILE_NAME: "Dockerfile"
+  rules:
+    - if: '$CI_COMMIT_REF_NAME !~ /^auto-fix-.*/'
+
+unittest:
+  stage: unittest
+  image: registry.cern.ch/crest/$IMAGE:$VERSION
+  needs: ["build_container_job"]
+  services:
+    - name: registry.cern.ch/crest/crest21-service:6.2
+      alias: crest-service
+      variables:
+        SPRING_PROFILES_ACTIVE: "default,nosecurity"
+        CREST_API_NAME: "/api-v6.0"
+        CREST_SERVER_PORT: "8080"
+        CREST_SERVER_SECURITY: "none"
+  script:
+    - |
+      echo "Creating application.properties file..."
+      printf "# Spring Boot Configuration\nspring.profiles.active=default, nosecurity\ncrest.api.name=/api-v6.0\ncrest.server.port=8080\ncrest.server.security=none\n" > application.properties
+      echo "Checking if the service is up..."
+      date
+      ii=0
+      while ! nc -z crest-service 8080; do
+        echo "Waiting for the service to be up..."
+        sleep 5
+        ii=$((ii+1))
+        if [ $ii -eq 10 ]; then
+          echo "Service is not up after 50 seconds...exiting..."
+          exit 1
+        fi
+      done
+      sleep 40
+      echo "Running CHAI tests..."
+      cd ${home_dir}/build
+      export CREST_SERVER="http://crest-service:8080/api-v6.0"
+      ./test/CrestApi_test --gtest_output=xml:test_results.xml
+      echo "Generating coverage report..."
+      dnf install -y python3-pip
+      pip3 install gcovr
+      gcovr --xml-pretty --exclude-unreachable-branches --print-summary \
+            --filter="${home_dir}/src/" --filter="${home_dir}/CrestApi/" \
+            --exclude="${home_dir}/build/_deps/" \
+            --exclude="${home_dir}/tests/" \
+            --exclude="${home_dir}/examples/" \
+            --root ${home_dir} \
+            -o coverage.xml ${home_dir}/build
+      echo "Generating HTML coverage report..."
+      mkdir -p coverage_html
+      gcovr --html-details coverage_html/index.html --exclude-unreachable-branches \
+            --filter="${home_dir}/src/" --filter="${home_dir}/CrestApi/" \
+            --exclude="${home_dir}/build/_deps/" \
+            --exclude="${home_dir}/tests/" \
+            --exclude="${home_dir}/examples/" \
+            --root ${home_dir} \
+            ${home_dir}/build
+      echo "Copying artifacts to GitLab working directory..."
+      mkdir -p ${CI_PROJECT_DIR}/reports/coverage
+      cp test_results.xml ${CI_PROJECT_DIR}/reports/
+      cp coverage.xml ${CI_PROJECT_DIR}/reports/
+      cp -r coverage_html/* ${CI_PROJECT_DIR}/reports/coverage/ || true
+  coverage: '/^lines: (\d+\.\d+)%/'
+  artifacts:
+    when: always
+    reports:
+      junit: reports/test_results.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: reports/coverage.xml
+    paths:
+      - reports/test_results.xml
+      - reports/coverage.xml
+      - reports/coverage/
+  rules:
+    - if: '$CI_COMMIT_REF_NAME !~ /^auto-fix-.*/'
+
+apitest:
+  stage: test
+  image: registry.cern.ch/crest/$IMAGE:$VERSION
+  services:
+    - name: registry.cern.ch/crest/crest21-service:6.2
+      alias: crest-service
+      variables:
+        SPRING_PROFILES_ACTIVE: "default,nosecurity"
+        CREST_API_NAME: "/api-v6.0"
+        CREST_SERVER_PORT: "8080"
+        CREST_SERVER_SECURITY: "none"
+  script:
+    - |
+      echo "Creating application.properties file..."
+      printf "# Spring Boot Configuration\nspring.profiles.active=default, nosecurity\ncrest.api.name=/api-v6.0\ncrest.server.port=8080\ncrest.server.security=none\n" > application.properties
+      echo "checking if the service is up..."
+      date
+      ii=0
+      while ! nc -z crest-service 8080; do
+        echo "Waiting for the service to be up..."
+        sleep 5
+        ii=$((ii+1))
+        if [ $ii -eq 10 ]; then
+          echo "Service is not up after 50 seconds...exiting..."
+          exit 1
+        fi
+      done
+      sleep 40
+      echo "Running test..."
+      cd /home/crestclient/build
+      ./examples/crest_example_server http://crest-service:8080 api-v6.0
+      echo "File system tests..."
+      ./examples/crest_example_fs
+  rules:
+    - if: '$CI_COMMIT_REF_NAME !~ /^auto-fix-.*/'
+
+crestcmd:  # or any other appropriate stage
+  stage: compile-crestcmd
+  script:
+    - curl -X POST -F token=$CRESTCMD_TOKEN -F ref=release-6.1-CR1 https://gitlab.cern.ch/api/v4/projects/144796/trigger/pipeline
+  only:
+    - release-5.1-CR2  # or whichever branch in Project 1 should trigger Project 2

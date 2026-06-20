@@ -1,0 +1,28 @@
+# Copyright (C) 2002-2025 CERN for the benefit of the ATLAS collaboration
+
+# Avoid hard-coding absolute paths
+# This calculates ${PACKAGE_PREFIX_DIR} at run-time based on the
+# relative locations of the CMAKE_INSTALL_PREFIX and this config file
+# after installation
+@PACKAGE_INIT@
+
+# Set up useful variables.
+set_and_check(CrestApi_INCLUDE_DIR "@PACKAGE_CMAKE_INSTALL_INCLUDEDIR@")
+set_and_check(CrestApi_LIBRARY_DIR "@PACKAGE_CMAKE_INSTALL_LIBDIR@")
+
+# Find dependencies
+include(CMakeFindDependencyMacro)
+find_dependency(CURL)
+find_dependency(OpenSSL)
+find_dependency(nlohmann_json 3.2.0)
+find_dependency(Boost)
+
+# Use the cmake generated target
+include("${CMAKE_CURRENT_LIST_DIR}/CrestApiTargets.cmake")
+set(CrestApi_LIBRARIES CrestApi::CrestApiLib)
+
+# Print a standard information message about the package being found.
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(CrestApi
+   REQUIRED_VARS CMAKE_CURRENT_LIST_FILE
+   VERSION_VAR CrestApi_VERSION )

@@ -1,0 +1,30 @@
+# Log of the changes. 
+
+2024-11-12  Andrea Formica  <andrea.formica@cern.ch>
+
+    * Follow recommendations by Shaun ([9][10])
+
+    * CrestClient.cpp: Removed host, prefix, and port attributes from the CrestClient class.
+    - Replaced them with a free function `makeUrl` for better modularity and flexibility.
+    - This change addresses performance recommendations and simplifies URL construction.
+
+    * StringUtils.h: Added new utility functions for URL parsing and string handling.
+    - Ensures that URL handling logic is encapsulated in a dedicated utilities file.
+    - References: ATDBOPS-366 (JIRA) https://its.cern.ch/jira/browse/ATDBOPS-366
+
+2024-11-12  Andrea Formica  <andrea.formica@cern.ch>
+    * Follow the recommendations by Shaun ([11])
+
+    * CrestDetail.h,.cpp : add file to deal with endpoints
+    - We moved all endpoint references to an external file.
+    - an endpoint can be called: current_path += endpoints[METHOD_IOVS];
+
+2024-11-25 Mikhail Mineev <mineev@jinr.ru>
+    - the methods from_json and to_json are renamed,
+    - classes CrestClient, CrestClientExt and CrestFsClient renamed to CrestApi, CrestApiExt and CrestApiFs,
+    - include for Boost.Asio removed.
+
+2024-11-29 Mikhail Mineev <mineev@jinr.ru>
+    - CrestModel.h and CrestModel.cxx split into DTOs.
+    - DTO classes put in the Crest namespace.
+    - method trim moved into StringUtils.
