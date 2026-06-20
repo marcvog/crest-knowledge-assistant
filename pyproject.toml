@@ -4,4 +4,7 @@ version = "0.1.0"
 description = "AI-powered engineering assistant for the CERN ATLAS CREST ecosystem"
 readme = "README.md"
 requires-python = ">=3.12,<4.0"
-dependencies = []
+dependencies = [
+    "tree-sitter",
+    "tree-sitter-cpp",
+]
