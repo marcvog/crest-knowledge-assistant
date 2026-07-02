@@ -40,7 +40,7 @@ class SemanticEntity:
     qualified_name: str
 
     namespace: str | None
-    owner: str | None
+    parent: str | None
 
     source_file: Path
     start_line: int
@@ -82,8 +82,7 @@ def extract_scope(node):
     if node.type == "qualified_identifier":
         scope_node = node.child_by_field_name("scope")
         if scope_node.type == "namespace_identifier":
-            scope = scope_node.text.decode()
-            return scope
+            return scope_node.text.decode()
     return None
 
 def extract_name(node):
@@ -99,7 +98,7 @@ def extract_name(node):
             return name_node.text.decode()
     return None
 
-def extract_namespace(node):
+def extract_namespace_from_node(node):
     """
     Extracts the namespace from a namespace_definition node.
     """
@@ -109,26 +108,38 @@ def extract_namespace(node):
             return name_node.text.decode()
     return None
 
-def process_node(node, code):
+def extract_namespace():
     """
-    entity = SemanticEntity(
-        kind=EntityKind.FUNCTION,
-        name=
-    )
+    Extracts the current namespace from the namespace stack.
     """
+    if namespace_stack:
+        return "::".join(namespace_stack)
+    return None
+
+def extract_parent(node):
     """
-    if node.type == "namespace_definition":
-        print(node)
-        namespace_identifier = node.child_by_field_name("name")
-        print(f'Namespace Identifier text: {namespace_identifier.text.decode()}')
+    Extracts the parent of a semantic entity.
     """
+    if node.type == "function_definition":
+        qualified_identifier_node = extract_qualified_identifier_node(node)
+        parts = []
+        parts.extend(namespace_stack)
+        scope =extract_scope(qualified_identifier_node)
+        if scope:
+            parts.append(scope)
+        parent = "::".join(parts)
+        return parent
+    #elif node.type == "class_specifier":
+    return None    
+
+
+def process_node(node, path):
         
     if node.type == "function_definition":
         # Extract function name, parameters, return type, etc.
         # You can use node.child_by_field_name("name") to get the function name node
         # and node.child_by_field_name("parameters") to get the parameters node
         # Similarly, you can extract other relevant information
-
 
         parts = []
         parts.extend(namespace_stack)
@@ -138,19 +149,19 @@ def process_node(node, code):
         fully_qualified_name = "::".join(parts)
         print(f'Fully qualified name: {fully_qualified_name}')
 
-
-
-
         print(f'Node type: {node.type}')
         print(parts)
         print(node)
         print(f'Function start line: {node.start_point[0] + 1}')
         print(f'Function end line: {node.end_point[0] + 1}')
 
+        #qualified_name
         qualified_identifier_node = extract_qualified_identifier_node(node)
         if qualified_identifier_node.type == "qualified_identifier":
             qualified_name = extract_qualified_name(qualified_identifier_node)
             print(f'Qualified name: {qualified_name}')
+
+        print(f'Parent: {extract_parent(node)}')
 
 
         
@@ -172,20 +183,40 @@ def process_node(node, code):
         else:
             print('This function does not have a type')
 
-        print(f'Node text: {node.text.decode()}')
+        #source_code
+        print(f'Node text: {node.text.decode("utf-8")}')
+        #source_file
+        source_file = path
+        print(f'Source file: {source_file}')
 
         body = node.child_by_field_name("body")
-        signature = code[node.start_byte : body.start_byte].decode()
-        print(f'Signature: {signature}')
+        source_bytes = path.read_bytes()
 
-        #qualified_name = 
+        signature = source_bytes[node.start_byte : body.start_byte].decode("utf-8")
+        print(f'Signature: {signature}')
         
 
         #print(f'Declarator: {declarator}')
         #print(f'Body: {body}')
         #print(f'Type: {type_node}')
 
-        pass
+        entity = SemanticEntity(
+            kind=EntityKind.METHOD,
+            name=extract_name(qualified_identifier_node),
+            qualified_name=fully_qualified_name,
+            namespace=extract_namespace(),
+            parent=extract_parent(node),
+            source_file=path,
+            start_line=node.start_point[0] + 1,
+            end_line=node.end_point[0] + 1,
+            signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
+            documentation=None,
+            source_code=node.text.decode("utf-8")
+        )
+        print(f'Entity: {entity}')
+
+        return entity
+    return None
 
 def main():
     # Get the current working directory
@@ -209,11 +240,11 @@ def main():
 
     parser = Parser(cpp_language)
 
-    # Read the source file as bytes
-    code = Path("../data/CrestApi/src/CrestApi.cxx").read_bytes()
-    #code = Path("../data/CrestApi/CrestApi/CrestApi.h").read_bytes()
+    # Source file
+    path = Path("../data/CrestApi/src/CrestApi.cxx")
+    #path = Path("../data/CrestApi/CrestApi/CrestApi.h")
     
-    tree = parser.parse(code)
+    tree = parser.parse(path.read_bytes())
     print(tree.root_node.type)
 
     """
@@ -263,7 +294,7 @@ def main():
     """
     def walk(node, level=0):
         print("  " * level + node.type)
-        process_node(node,code)
+        process_node(node, path)
         for child in node.children:
             walk(child, level + 1)
 
@@ -276,7 +307,7 @@ def main():
 
         if node.type == "namespace_definition":
 
-            namespace = extract_namespace(node)
+            namespace = extract_namespace_from_node(node)
             print(f'Namespace Identifier text: {namespace}')
 
             namespace_stack.append(namespace)
@@ -289,7 +320,10 @@ def main():
 
             return
 
-        process_node(node, code)
+        entity=process_node(node, path)
+        if entity is not None:
+            print(f'Entity: {entity}')
+            entities.append(entity)
 
         for child in node.children:
             walk(child)
