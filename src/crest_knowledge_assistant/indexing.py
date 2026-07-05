@@ -140,7 +140,7 @@ def process_node(node, path):
         # You can use node.child_by_field_name("name") to get the function name node
         # and node.child_by_field_name("parameters") to get the parameters node
         # Similarly, you can extract other relevant information
-
+        """
         parts = []
         parts.extend(namespace_stack)
         qualified_name = extract_qualified_name(extract_qualified_identifier_node(node))
@@ -148,13 +148,15 @@ def process_node(node, path):
             parts.append(qualified_name)
         fully_qualified_name = "::".join(parts)
         print(f'Fully qualified name: {fully_qualified_name}')
+        """
 
         print(f'Node type: {node.type}')
-        print(parts)
+        #print(parts)
         print(node)
         print(f'Function start line: {node.start_point[0] + 1}')
         print(f'Function end line: {node.end_point[0] + 1}')
 
+        """
         #qualified_name
         qualified_identifier_node = extract_qualified_identifier_node(node)
         if qualified_identifier_node.type == "qualified_identifier":
@@ -162,7 +164,7 @@ def process_node(node, path):
             print(f'Qualified name: {qualified_name}')
 
         print(f'Parent: {extract_parent(node)}')
-
+        """
 
         
         print('-------------')
@@ -199,7 +201,7 @@ def process_node(node, path):
         #print(f'Declarator: {declarator}')
         #print(f'Body: {body}')
         #print(f'Type: {type_node}')
-
+        """
         entity = SemanticEntity(
             kind=EntityKind.METHOD,
             name=extract_name(qualified_identifier_node),
@@ -216,6 +218,20 @@ def process_node(node, path):
         print(f'Entity: {entity}')
 
         return entity
+        """
+    elif node.type == "enum_specifier":
+        print(f'Node type: {node.type}')
+        print(node)
+        name_node = node.child_by_field_name("name")
+        if name_node.type == "type_identifier":
+            print(f'Enum name: {name_node.text.decode("utf-8")}')
+        else:
+            print('This enum does not have a name')
+        print(f'Enum start line: {node.start_point[0] + 1}')
+        print(f'Enum end line: {node.end_point[0] + 1}')
+        print(f'Node text: {node.text.decode("utf-8")}')
+        source_file = path
+        print(f'Source file: {source_file}')
     return None
 
 def main():

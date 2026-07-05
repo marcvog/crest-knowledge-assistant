@@ -837,6 +837,26 @@ RunLumiSetDto CrestApi::listRunInfo(const std::string &since,
 
   return dto;
 }
+
+// ---------------------------------------------------------------------------
+// Toy entities for testing the extractor
+// ---------------------------------------------------------------------------
+
+struct ToyStruct {
+    int value;
+    void reset() { value = 0; }
+};
+
+enum class ToyColor {
+    Red,
+    Green,
+    Blue
+};
+
+int toyFreeFunction(int x, int y)
+{
+    return x + y;
+}
 //==============================================================================================================
 
 }  // namespace Crest
