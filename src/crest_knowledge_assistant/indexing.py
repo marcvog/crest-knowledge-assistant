@@ -98,6 +98,18 @@ def extract_name(node):
             return name_node.text.decode()
     return None
 
+def extract_free_function_name(node):
+    """
+    Extracts the name of a function from a function_definition node.
+    """
+
+    if node.type == "function_definition":
+        function_declarator_node = node.child_by_field_name("declarator")
+        identifier_node = function_declarator_node.child_by_field_name("declarator")
+        if identifier_node.type == "identifier":
+            return identifier_node.text.decode()
+    return None
+
 def extract_namespace_from_node(node):
     """
     Extracts the namespace from a namespace_definition node.
@@ -134,40 +146,58 @@ def extract_parent(node):
 
 
 def process_node(node, path):
+    print('-----node description--------')
+    print(f'Node type: {node.type}')
+    print(node)
+    
+    print(f'Function start line: {node.start_point[0] + 1}')
+    print(f'Function end line: {node.end_point[0] + 1}')
+    print(f'Node text: {node.text.decode("utf-8")}')
+    print(f'Source file: {path}')
+
+    source_bytes = path.read_bytes()
+    body = node.child_by_field_name("body")
+    #print(f'Body: {body}')
         
     if node.type == "function_definition":
         # Extract function name, parameters, return type, etc.
         # You can use node.child_by_field_name("name") to get the function name node
         # and node.child_by_field_name("parameters") to get the parameters node
         # Similarly, you can extract other relevant information
-        """
-        parts = []
-        parts.extend(namespace_stack)
-        qualified_name = extract_qualified_name(extract_qualified_identifier_node(node))
-        if qualified_name:
-            parts.append(qualified_name)
-        fully_qualified_name = "::".join(parts)
-        print(f'Fully qualified name: {fully_qualified_name}')
-        """
 
-        print(f'Node type: {node.type}')
-        #print(parts)
-        print(node)
-        print(f'Function start line: {node.start_point[0] + 1}')
-        print(f'Function end line: {node.end_point[0] + 1}')
-
-        """
-        #qualified_name
         qualified_identifier_node = extract_qualified_identifier_node(node)
-        if qualified_identifier_node.type == "qualified_identifier":
+        if qualified_identifier_node:
+            name=extract_name(qualified_identifier_node)
+            parts = []
+            parts.extend(namespace_stack)
             qualified_name = extract_qualified_name(qualified_identifier_node)
-            print(f'Qualified name: {qualified_name}')
+            if qualified_name:
+                parts.append(qualified_name)
+            fully_qualified_name = "::".join(parts)
+            print(f'Fully qualified name: {fully_qualified_name}')
 
-        print(f'Parent: {extract_parent(node)}')
-        """
+            #qualified_name
+            if qualified_identifier_node.type == "qualified_identifier":
+                qualified_name = extract_qualified_name(qualified_identifier_node)
+                print(f'Qualified name: {qualified_name}')
+            print(f'Parent: {extract_parent(node)}')
+            parent=extract_parent(node)
+        else:
+            name=extract_free_function_name(node)
+            parts = []
+            parts.extend(namespace_stack)
 
-        
-        print('-------------')
+            if name:
+                parts.append(name)
+            fully_qualified_name = "::".join(parts)
+            print(f'Fully qualified name: {fully_qualified_name}')
+ 
+            parts = []
+            parts.extend(namespace_stack)
+            parent="::".join(parts)
+            print(f'Parent: {parent}')
+
+        print('-----return type block--------')
         node_type = node.child_by_field_name("type")
         if node_type is not None:
             print(node_type.type)
@@ -185,29 +215,15 @@ def process_node(node, path):
         else:
             print('This function does not have a type')
 
-        #source_code
-        print(f'Node text: {node.text.decode("utf-8")}')
-        #source_file
-        source_file = path
-        print(f'Source file: {source_file}')
-
-        body = node.child_by_field_name("body")
-        source_bytes = path.read_bytes()
-
         signature = source_bytes[node.start_byte : body.start_byte].decode("utf-8")
         print(f'Signature: {signature}')
         
-
-        #print(f'Declarator: {declarator}')
-        #print(f'Body: {body}')
-        #print(f'Type: {type_node}')
-        """
         entity = SemanticEntity(
             kind=EntityKind.METHOD,
-            name=extract_name(qualified_identifier_node),
+            name=name,
             qualified_name=fully_qualified_name,
             namespace=extract_namespace(),
-            parent=extract_parent(node),
+            parent=parent,
             source_file=path,
             start_line=node.start_point[0] + 1,
             end_line=node.end_point[0] + 1,
@@ -218,20 +234,45 @@ def process_node(node, path):
         print(f'Entity: {entity}')
 
         return entity
-        """
-    elif node.type == "enum_specifier":
-        print(f'Node type: {node.type}')
-        print(node)
+
+    elif node.type == "enum_specifier":# watch out, these can be inside classes and structs. Implement to skip in those cases for now
+
         name_node = node.child_by_field_name("name")
         if name_node.type == "type_identifier":
             print(f'Enum name: {name_node.text.decode("utf-8")}')
         else:
             print('This enum does not have a name')
-        print(f'Enum start line: {node.start_point[0] + 1}')
-        print(f'Enum end line: {node.end_point[0] + 1}')
-        print(f'Node text: {node.text.decode("utf-8")}')
-        source_file = path
-        print(f'Source file: {source_file}')
+
+        parts = []
+        parts.extend(namespace_stack)# need to add class_stack
+        qualified_name = name_node.text.decode("utf-8")
+        if qualified_name:
+            parts.append(qualified_name)
+        fully_qualified_name = "::".join(parts)
+        print(f'Fully qualified enum name: {fully_qualified_name}')
+
+        parts = []
+        parts.extend(namespace_stack)# need to add class_stack
+        parent="::".join(parts)#add an enclosing class if any
+        print(f'Parent: {parent}')
+
+        entity = SemanticEntity(
+            kind=EntityKind.ENUM,
+            name=name_node.text.decode("utf-8"),
+            qualified_name=fully_qualified_name,
+            namespace=extract_namespace(),
+            parent=parent,
+            source_file=path,
+            start_line=node.start_point[0] + 1,
+            end_line=node.end_point[0] + 1,
+            signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
+            documentation=None,
+            source_code=node.text.decode("utf-8")
+        )
+        print(f'Entity: {entity}')
+        return entity
+
+
     return None
 
 def main():
