@@ -361,8 +361,8 @@ def main():
     parser = Parser(cpp_language)
 
     # Source file
-    path = Path("../data/CrestApi/src/CrestApi.cxx")
-    #path = Path("../data/CrestApi/CrestApi/CrestApi.h")
+    #path = Path("../data/CrestApi/src/CrestApi.cxx")
+    path = Path("../data/CrestApi/CrestApi/CrestApi.h")
     
     tree = parser.parse(path.read_bytes())
     print(tree.root_node.type)
