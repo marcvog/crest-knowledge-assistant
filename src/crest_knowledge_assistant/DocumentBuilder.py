@@ -1,3 +1,3 @@
-import indexing
+import crest_knowledge_assistant.SemanticEntityExtractor as SemanticEntityExtractor
 
 class DocumentBuilder:

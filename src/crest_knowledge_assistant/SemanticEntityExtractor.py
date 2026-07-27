@@ -1,18 +1,14 @@
-import code
-from enum import Enum
-from html import parser
 import os
 from pathlib import Path
-import pathlib
-from platform import node
-import sys
 from tree_sitter import Parser
 import tree_sitter_cpp
-from dataclasses import dataclass
 
 from tree_sitter import Language, Query, QueryCursor
 
+from SemanticEntity import SemanticEntity, EntityKind
+from SemanticEntityStore import EntityStore
 
+store = EntityStore()
 namespace_stack = []
 struct_stack = []
 class_stack = []
@@ -32,32 +28,8 @@ def get_file_paths(folder):
             file_paths.append(file_path)
     return file_paths
 
-class EntityKind(Enum):
-    NAMESPACE = "namespace"
-    CLASS = "class"
-    STRUCT = "struct"
-    METHOD = "method"
-    FUNCTION = "function"
-    ENUM = "enum"
-    TYPE_ALIAS = "type_alias"
+entities: list[SemanticEntity] = []
 
-@dataclass
-class SemanticEntity:
-    kind: EntityKind
-    name: str
-    qualified_name: str
-
-    namespace: str | None
-
-    source_file: Path
-    start_line: int
-    end_line: int
-
-    signature: str
-    documentation: str | None
-    source_code: str
-
-entities = [SemanticEntity]
 
 def extract_qualified_identifier_node(node):
     """
@@ -466,6 +438,9 @@ def main():
             if name_node.type == "type_identifier":
                 print(f'Struct name: {name_node.text.decode("utf-8")}')
                 entity=process_node(node, path)
+                if entity is not None:
+                    print(f'Entity: {entity}')
+                    entities.append(entity)
                 struct_stack.append(name_node.text.decode("utf-8"))
 
                 for child in node.children:
@@ -481,6 +456,9 @@ def main():
             if name_node.type == "type_identifier":
                 print(f'Class name: {name_node.text.decode("utf-8")}')
                 entity=process_node(node, path)
+                if entity is not None:
+                    print(f'Entity: {entity}')
+                    entities.append(entity)
                 class_stack.append(name_node.text.decode("utf-8"))
 
 
@@ -500,8 +478,11 @@ def main():
 
         for child in node.children:
             walk(child)
+
     
     walk(tree.root_node)
+    print(f'entities length: {len(entities)}')
+    store.save(entities)
 
 if __name__ == "__main__":
     main()
