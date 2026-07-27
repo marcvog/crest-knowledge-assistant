@@ -15,6 +15,13 @@ from tree_sitter import Language, Query, QueryCursor
 
 namespace_stack = []
 struct_stack = []
+class_stack = []
+
+def first_child_of_type(node, node_type):
+    for child in node.children:
+        if child.type == node_type:
+            return child
+    return None
 
 def get_file_paths(folder):
     file_paths = []
@@ -41,7 +48,6 @@ class SemanticEntity:
     qualified_name: str
 
     namespace: str | None
-    parent: str | None
 
     source_file: Path
     start_line: int
@@ -71,9 +77,11 @@ def extract_qualified_name(node):
     """
     if node.type == "qualified_identifier":
         scope = extract_scope(node)
-        name = extract_name(node)
-        if scope and name:
-            return f"{scope}::{name}"
+        name_node = node.child_by_field_name("name")  
+        if name_node.type == "qualified_identifier":
+            return scope + "::" + extract_qualified_name(name_node)
+        elif name_node.type == "identifier" or "destructor_name":
+            return f"{scope}::{name_node.text.decode()}"
     return None
 
 def extract_scope(node):
@@ -95,8 +103,9 @@ def extract_name(node):
         if name_node.type == "identifier":
             return name_node.text.decode()
         elif name_node.type == "destructor_name":
-            #identifier_node = name_node.named_child(0)
             return name_node.text.decode()
+        elif name_node.type == "qualified_identifier":
+            return extract_name(name_node)
     return None
 
 def extract_free_function_name(node):#this is not being used
@@ -129,7 +138,7 @@ def extract_namespace():
         return "::".join(namespace_stack)
     return None
 
-def extract_parent(node):
+def extract_parent(node):#this is not being used
     """
     Extracts the parent of a semantic entity.
     """
@@ -178,14 +187,7 @@ def process_node(node, path):
             fully_qualified_name = "::".join(parts)
             print(f'Fully qualified name: {fully_qualified_name}')
 
-            #qualified_name
-            if qualified_identifier_node.type == "qualified_identifier":
-                qualified_name = extract_qualified_name(qualified_identifier_node)
-                print(f'Qualified name: {qualified_name}')
-            print(f'Parent: {extract_parent(node)}')
-            parent=extract_parent(node)
-
-        else:
+        else:# this is the free function
             function_declarator_node = node.child_by_field_name("declarator")
             identifier_node = function_declarator_node.child_by_field_name("declarator")
             if identifier_node.type == "identifier":
@@ -198,29 +200,20 @@ def process_node(node, path):
                     parts.append(name)
                 fully_qualified_name = "::".join(parts)
                 print(f'Fully qualified name: {fully_qualified_name}')
-    
-                parts = []
-                parts.extend(namespace_stack)
-                parent="::".join(parts)
-                print(f'Parent: {parent}')
 
-            elif identifier_node.type == "field_identifier":
+            elif identifier_node.type == "field_identifier":# functions inside struct
                 kind = EntityKind.METHOD
                 name = identifier_node.text.decode()
                 parts = []
                 parts.extend(namespace_stack)
+                parts.extend(class_stack)
                 parts.extend(struct_stack)
 
                 if name:
                     parts.append(name)
                 fully_qualified_name = "::".join(parts)
                 print(f'Fully qualified name: {fully_qualified_name}')
-        
-                parts = []
-                parts.extend(namespace_stack)
-                parts.extend(struct_stack)
-                parent="::".join(parts)
-                print(f'Parent: {parent}')
+
 
         print('-----return type block--------')
         node_type = node.child_by_field_name("type")
@@ -248,7 +241,6 @@ def process_node(node, path):
             name=name,
             qualified_name=fully_qualified_name,
             namespace=extract_namespace(),
-            parent=parent,
             source_file=path,
             start_line=node.start_point[0] + 1,
             end_line=node.end_point[0] + 1,
@@ -269,24 +261,19 @@ def process_node(node, path):
             print('This enum does not have a name')
 
         parts = []
-        parts.extend(namespace_stack)# need to add class_stack
+        parts.extend(namespace_stack)
+        parts.extend(class_stack)
         qualified_name = name_node.text.decode("utf-8")
         if qualified_name:
             parts.append(qualified_name)
         fully_qualified_name = "::".join(parts)
         print(f'Fully qualified enum name: {fully_qualified_name}')
 
-        parts = []
-        parts.extend(namespace_stack)# need to add class_stack
-        parent="::".join(parts)#add an enclosing class if any
-        print(f'Parent: {parent}')
-
         entity = SemanticEntity(
             kind=EntityKind.ENUM,
             name=name_node.text.decode("utf-8"),
             qualified_name=fully_qualified_name,
             namespace=extract_namespace(),
-            parent=parent,
             source_file=path,
             start_line=node.start_point[0] + 1,
             end_line=node.end_point[0] + 1,
@@ -306,24 +293,19 @@ def process_node(node, path):
             print('This struct does not have a name')
 
         parts = []
-        parts.extend(namespace_stack)# need to add class_stack
+        parts.extend(namespace_stack)
+        parts.extend(class_stack)
         qualified_name = name_node.text.decode("utf-8")
         if qualified_name:
             parts.append(qualified_name)
         fully_qualified_name = "::".join(parts)
         print(f'Fully qualified struct name: {fully_qualified_name}')
 
-        parts = []
-        parts.extend(namespace_stack)# need to add class_stack
-        parent="::".join(parts)#add an enclosing class if any
-        print(f'Parent: {parent}')
-
         entity = SemanticEntity(
             kind=EntityKind.STRUCT,
             name=name_node.text.decode("utf-8"),
             qualified_name=fully_qualified_name,
             namespace=extract_namespace(),
-            parent=parent,
             source_file=path,
             start_line=node.start_point[0] + 1,
             end_line=node.end_point[0] + 1,
@@ -332,9 +314,47 @@ def process_node(node, path):
             source_code=node.text.decode("utf-8")
         )
         print(f'Entity: {entity}')
+        return entity 
+    
+    elif node.type == "class_specifier":
+        name_node = node.child_by_field_name("name")
+        if name_node.type == "type_identifier":
+            name = name_node.text.decode("utf-8")
+            print(f'Class name: {name}')
 
-        return entity            
+        base_class_clause_node = first_child_of_type(node, "base_class_clause")
+        if base_class_clause_node is not None:
+            access_specifier_node = first_child_of_type(base_class_clause_node, "access_specifier")
+            if access_specifier_node.type == "access_specifier":
+                print(f'access_specifier_node text: {access_specifier_node.text.decode("utf-8")}')
+            type_identifier_node = first_child_of_type(base_class_clause_node, "type_identifier")
+            if type_identifier_node.type == "type_identifier":
+                print(f'type_identifier_node text: {type_identifier_node.text.decode("utf-8")}')
 
+        parts = []
+        parts.extend(namespace_stack)
+        parts.extend(class_stack)
+        qualified_name = name_node.text.decode("utf-8")
+        if qualified_name:
+            parts.append(qualified_name)
+        fully_qualified_name = "::".join(parts)
+        print(f'Fully qualified class name: {fully_qualified_name}')
+
+
+        entity = SemanticEntity(
+            kind=EntityKind.CLASS,
+            name=name_node.text.decode("utf-8"),
+            qualified_name=fully_qualified_name,
+            namespace=extract_namespace(),
+            source_file=path,
+            start_line=node.start_point[0] + 1,
+            end_line=node.end_point[0] + 1,
+            signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
+            documentation=None,
+            source_code=node.text.decode("utf-8")
+        )
+        print(f'Entity: {entity}')
+        return entity 
 
     return None
 
@@ -361,8 +381,8 @@ def main():
     parser = Parser(cpp_language)
 
     # Source file
-    #path = Path("../data/CrestApi/src/CrestApi.cxx")
-    path = Path("../data/CrestApi/CrestApi/CrestApi.h")
+    path = Path("../data/CrestApi/src/CrestApi.cxx")
+    #path = Path("../data/CrestApi/CrestApi/CrestApi.h")
     
     tree = parser.parse(path.read_bytes())
     print(tree.root_node.type)
@@ -445,8 +465,8 @@ def main():
             name_node = node.child_by_field_name("name")
             if name_node.type == "type_identifier":
                 print(f'Struct name: {name_node.text.decode("utf-8")}')
-                struct_stack.append(name_node.text.decode("utf-8"))
                 entity=process_node(node, path)
+                struct_stack.append(name_node.text.decode("utf-8"))
 
                 for child in node.children:
                     walk(child)
@@ -454,7 +474,24 @@ def main():
                 print("  " * level + f"Exiting struct: {name_node.text.decode("utf-8")}")
                 struct_stack.pop()
 
-                return        
+                return
+            
+        if node.type == "class_specifier":
+            name_node = node.child_by_field_name("name")
+            if name_node.type == "type_identifier":
+                print(f'Class name: {name_node.text.decode("utf-8")}')
+                entity=process_node(node, path)
+                class_stack.append(name_node.text.decode("utf-8"))
+
+
+                for child in node.children:
+                    walk(child)
+
+                print("  " * level + f"Exiting class: {name_node.text.decode("utf-8")}")
+                class_stack.pop()
+
+                return
+         
 
         entity=process_node(node, path)
         if entity is not None:

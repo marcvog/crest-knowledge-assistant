@@ -842,10 +842,28 @@ RunLumiSetDto CrestApi::listRunInfo(const std::string &since,
 // Toy entities for testing the extractor
 // ---------------------------------------------------------------------------
 
-struct ToyStruct {
-    int value;
-    void reset() { value = 0; }
-};
+
+
+
+int toyFreeFunction(int x, int y)
+{
+    return x + y;
+}
+int CrestApi::NestedProbe::doubleValue(int value) const
+{
+    return value * 2;
+}
+
+void CrestApi::ToyStruct::reset() {
+    value = 0;
+}
+
+namespace Testing {
+
+int NamespaceProbe::increment(int value) const
+{
+    return value + 1;
+}
 
 enum class ToyColor {
     Red,
@@ -853,10 +871,9 @@ enum class ToyColor {
     Blue
 };
 
-int toyFreeFunction(int x, int y)
-{
-    return x + y;
-}
+} // namespace Testing
+
+
 //==============================================================================================================
 
 }  // namespace Crest
