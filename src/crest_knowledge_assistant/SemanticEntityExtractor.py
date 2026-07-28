@@ -13,6 +13,21 @@ namespace_stack = []
 struct_stack = []
 class_stack = []
 
+
+# note that Parser is only an attribute, not a parent class
+class LanguageParser:
+    def __init__(self, language):
+        self.parser = Parser(language)
+
+    def parse(self, code):
+        return self.parser.parse(code)
+
+
+class EntityExtractor:
+    def __init__(self):
+        pass
+
+
 def first_child_of_type(node, node_type):
     for child in node.children:
         if child.type == node_type:
@@ -342,76 +357,20 @@ def main():
     
     # Now you can import modules from the parent directory
     #from crest_knowledge_assistant.indexing import some_module  # Replace with actual module name
-    folder = '../data/CrestApi'
+    folder = '../../data/CrestApi'
 
     file_paths = get_file_paths(folder)
     #print(file_paths)
 
-    cpp_language = Language(tree_sitter_cpp.language())
-
-
-    parser = Parser(cpp_language)
-
     # Source file
-    path = Path("../data/CrestApi/src/CrestApi.cxx")
-    #path = Path("../data/CrestApi/CrestApi/CrestApi.h")
+    path = Path("../../data/CrestApi/src/CrestApi.cxx")
+    #path = Path("../../data/CrestApi/CrestApi/CrestApi.h")
     
+    language = Language(tree_sitter_cpp.language())
+    parser = LanguageParser(language)
     tree = parser.parse(path.read_bytes())
     print(tree.root_node.type)
 
-    """
-    (class_specifier) @class
-    (struct_specifier) @struct
-    (enum_specifier) @enum
-    (function_definition) @function
-     (namespace_definition) @namespace
-    """
-
-
-    query = Query(cpp_language,
-        #"(function_definition) @function",
-        "(class_specifier) @class"
-    )
-    cursor = QueryCursor(query)
-    captures = cursor.captures(tree.root_node)
-
-    #print(type(captures))
-    #print(captures)
-    """
-    for function_node in captures["function"]:
-        print(function_node.type)
-        print(function_node.text.decode("utf-8"))
-    """
-
-    """
-    for capture_name, nodes in captures.items():
-        for node in nodes:
-            print(capture_name, node.text.decode("utf-8"))
-    """
-
-    """
-    def dump(node, code, indent=0):
-        print(
-            "  " * indent,
-            node.type,
-            repr(code[node.start_byte:node.end_byte][:40]),
-        )
-
-        for child in node.children:
-            dump(child, code, indent + 1)
-
-    dump(tree.root_node, code)
-    """
-
-    """
-    def walk(node, level=0):
-        print("  " * level + node.type)
-        process_node(node, path)
-        for child in node.children:
-            walk(child, level + 1)
-
-    walk(tree.root_node)
-    """
 
     def walk(node, level=0):
 
