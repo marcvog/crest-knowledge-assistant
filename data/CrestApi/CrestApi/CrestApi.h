@@ -590,12 +590,12 @@ class CrestApi : public CrestApiBase {
       Blue
   };
 
-  // struct ToyStruct {
-  //     int value;
-  //     void reset() {
-  //         value = 0;
-  //     }
-  // };
+  struct ToyStruct {
+      int value;
+      void reset() {
+          value = 0;
+      }
+  };
 
 };
 
