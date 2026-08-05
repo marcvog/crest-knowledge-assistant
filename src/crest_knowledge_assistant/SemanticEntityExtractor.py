@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from tree_sitter import Parser
 import tree_sitter_cpp
+import hashlib
 
 from tree_sitter import Language
 
@@ -268,8 +269,15 @@ class EntityExtractor:
                     None,
                 )
             )
+            # unique identifier
+            id=hashlib.sha256(
+                fully_qualified_name.encode("utf-8")
+                + b"\0"
+                + source_bytes[node.start_byte : end.start_byte]
+            ).hexdigest()
             
             entity = SemanticEntity(
+                id=id,
                 kind=kind,
                 name=name,
                 qualified_name=fully_qualified_name,
@@ -304,7 +312,15 @@ class EntityExtractor:
             fully_qualified_name = "::".join(parts)
             print(f'Fully qualified class name: {fully_qualified_name}')
 
+            # unique identifier
+            id=hashlib.sha256(
+                fully_qualified_name.encode("utf-8")
+                + b"\0"
+                + source_bytes[node.start_byte : body.start_byte]
+            ).hexdigest()
+
             entity = SemanticEntity(
+                id=id,
                 kind=EntityKind.CLASS,
                 name=name,
                 qualified_name=fully_qualified_name,
@@ -338,7 +354,15 @@ class EntityExtractor:
             fully_qualified_name = "::".join(parts)
             print(f'Fully qualified struct name: {fully_qualified_name}')
 
+            # unique identifier
+            id=hashlib.sha256(
+                fully_qualified_name.encode("utf-8")
+                + b"\0"
+                + source_bytes[node.start_byte : body.start_byte]
+            ).hexdigest()
+
             entity = SemanticEntity(
+                id=id,
                 kind=EntityKind.STRUCT,
                 name=name,
                 qualified_name=fully_qualified_name,
@@ -372,7 +396,15 @@ class EntityExtractor:
             fully_qualified_name = "::".join(parts)
             print(f'Fully qualified enum name: {fully_qualified_name}')
 
+            # unique identifier
+            id=hashlib.sha256(
+                fully_qualified_name.encode("utf-8")
+                + b"\0"
+                + source_bytes[node.start_byte : body.start_byte]
+            ).hexdigest()
+
             entity = SemanticEntity(
+                id=id,
                 kind=EntityKind.ENUM,
                 name=name,
                 qualified_name=fully_qualified_name,

@@ -16,6 +16,7 @@ class EntityKind(Enum):
 
 @dataclass
 class SemanticEntity:
+    id: str
     kind: EntityKind
     name: str
     qualified_name: str
@@ -29,6 +30,7 @@ class SemanticEntity:
 
     def to_dict (self) -> dict:
         dictionary = {
+                "id" : self.id,
                 "kind" : self.kind.value,
                 "name" : self.name,
                 "qualified_name" : self.qualified_name,
@@ -45,6 +47,7 @@ class SemanticEntity:
     @classmethod
     def from_dict(cls, data: dict) -> "SemanticEntity":
         entity = cls(
+            id=data["id"],
             kind=EntityKind(data["kind"]),
             name=data["name"],
             qualified_name=data["qualified_name"],
