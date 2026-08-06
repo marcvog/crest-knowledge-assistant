@@ -7,10 +7,9 @@ import hashlib
 from tree_sitter import Language
 
 from SemanticEntity import SemanticEntity, EntityKind
-from SemanticEntityStore import EntityStore
+from IndexStore import PROJECT_ROOT, INDEX_DIR, IndexStore
 
-
-CURRENT_DIR: str = os.path.dirname(os.path.realpath(__file__))
+DATA_DIR = PROJECT_ROOT / "data"
 
 # note that Parser is only an attribute, not a parent class
 class LanguageParser:
@@ -66,7 +65,7 @@ class EntityExtractor:
         self.namespace_stack: list[str] = []
         self.class_stack: list[str] = []
         self.struct_stack: list[str] = []
-        self.store = EntityStore(os.path.join(CURRENT_DIR, f"store/{path.stem}{path.suffix}.jsonl"))
+        self.store = IndexStore(entity_store_path=INDEX_DIR / f"{path.stem}{path.suffix}.jsonl")
 
     def extract_namespace(self):
         """
@@ -498,16 +497,16 @@ def main():
     
     # Now you can import modules from the parent directory
     #from crest_knowledge_assistant.indexing import some_module  # Replace with actual module name
-    folder = '../../data/CrestApi'
+    folder = DATA_DIR / "CrestApi"
 
-    file_paths = get_file_paths(folder)
+    file_paths = get_file_paths(folder.resolve())
     file_paths = [Path(file_path) for file_path in file_paths if ".cxx" in file_path or ".h" in file_path]
     #file_paths = [Path(file_path) for file_path in file_paths if ".cxx" in file_path]
     print(file_paths)
 
     # Source file
     #path = Path("../../data/CrestApi/src/CrestApi.cxx")
-    path = Path("../../data/CrestApi/CrestApi/CrestApi.h")
+    #path = Path("../../data/CrestApi/CrestApi/CrestApi.h")
     #path = Path("../../data/CrestApi/CrestApi/CrestRequest.h")
     #path = Path("../../data/CrestApi/CrestApi/ChannelSetDto.h")
     #path = Path("../../data/CrestApi/src/CrestRequest.cxx")
@@ -517,20 +516,20 @@ def main():
     language = Language(tree_sitter_cpp.language())
     parser = LanguageParser(language)
 
-    tree = parser.parse(path.read_bytes())
-    print(tree.root_node.type)
-    extractor = EntityExtractor(path)
-    extractor.walk(tree.root_node)
-    print(f'entities length: {len(extractor.entities)}')
-    extractor.store.save(extractor.entities)
+    # tree = parser.parse(path.read_bytes())
+    # print(tree.root_node.type)
+    # extractor = EntityExtractor(path)
+    # extractor.walk(tree.root_node)
+    # print(f'entities length: {len(extractor.entities)}')
+    # extractor.store.save_entities(extractor.entities)
 
-    # for path in file_paths:
-    #     tree = parser.parse(path.read_bytes())
-    #     print(tree.root_node.type)
-    #     extractor = EntityExtractor(path)
-    #     extractor.walk(tree.root_node)
-    #     print(f'entities length: {len(extractor.entities)}')
-    #     extractor.store.save(extractor.entities)
+    for path in file_paths:
+        tree = parser.parse(path.read_bytes())
+        print(tree.root_node.type)
+        extractor = EntityExtractor(path)
+        extractor.walk(tree.root_node)
+        print(f'entities length: {len(extractor.entities)}')
+        extractor.store.save_entities(extractor.entities)
 
 if __name__ == "__main__":
     main()
