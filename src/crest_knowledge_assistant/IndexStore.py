@@ -12,7 +12,7 @@ while not (path / "pyproject.toml").exists():
 PROJECT_ROOT = path
 INDEX_DIR = PROJECT_ROOT / "index"
 
-INDEX_STORE = INDEX_DIR / "index_store.json"
+INDEX_STORE = INDEX_DIR / "index_version.json"
 ENTITY_STORE = INDEX_DIR / "entity_store.jsonl"
 
 class IndexStore:

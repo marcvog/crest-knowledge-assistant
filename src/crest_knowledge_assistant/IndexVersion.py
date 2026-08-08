@@ -17,3 +17,13 @@ class IndexVersion:
                 "entity_count" : self.entity_count
         }
         return dictionary
+
+    @classmethod
+    def from_dict (cls, data: dict) -> "IndexVersion":
+        version = cls(
+            version_id=data["version_id"],
+            git_reference=data["git_reference"],
+            indexing_date=data["indexing_date"],
+            entity_count=data["entity_count"]
+        )
+        return version

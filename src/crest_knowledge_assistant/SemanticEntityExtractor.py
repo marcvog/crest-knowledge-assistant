@@ -1,12 +1,16 @@
 import os
 from pathlib import Path
+from uuid import uuid4
 from tree_sitter import Parser
 import tree_sitter_cpp
 import hashlib
+from datetime import datetime, UTC
+from git import Repo
 
 from tree_sitter import Language
 
 from SemanticEntity import SemanticEntity, EntityKind
+from IndexVersion import IndexVersion
 from IndexStore import PROJECT_ROOT, INDEX_DIR, IndexStore
 
 DATA_DIR = PROJECT_ROOT / "data"
@@ -57,6 +61,10 @@ def print_node(node):
     print(f'Node end line: {node.end_point[0] + 1}')
     print(f'Node text: {node.text.decode("utf-8")}')
 
+
+def get_git_reference(project_root: Path) -> str:
+    repo = Repo(project_root)
+    return repo.head.commit.hexsha
 
 class EntityExtractor:
     def __init__(self, path):
@@ -523,13 +531,24 @@ def main():
     # print(f'entities length: {len(extractor.entities)}')
     # extractor.store.save_entities(extractor.entities)
 
+    entity_count = 0
     for path in file_paths:
         tree = parser.parse(path.read_bytes())
         print(tree.root_node.type)
         extractor = EntityExtractor(path)
         extractor.walk(tree.root_node)
-        print(f'entities length: {len(extractor.entities)}')
+        entity_count += len(extractor.entities)
         extractor.store.save_entities(extractor.entities)
+
+    print(f'Total entities extracted: {entity_count}')
+    index_version = IndexVersion(
+        version_id=str(uuid4()),
+        git_reference=get_git_reference(PROJECT_ROOT),
+        indexing_date=datetime.now(UTC).isoformat(),
+        entity_count=entity_count
+    )
+
+    extractor.store.save_index(index_version)
 
 if __name__ == "__main__":
     main()
