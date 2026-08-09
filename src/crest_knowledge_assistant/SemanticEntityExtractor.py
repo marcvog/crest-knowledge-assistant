@@ -67,13 +67,13 @@ def get_git_reference(project_root: Path) -> str:
     return repo.head.commit.hexsha
 
 class EntityExtractor:
-    def __init__(self, path):
+    def __init__(self, path: Path):
         self.path = path
         self.entities: list[SemanticEntity] = []
         self.namespace_stack: list[str] = []
         self.class_stack: list[str] = []
         self.struct_stack: list[str] = []
-        self.store = IndexStore(entity_store_path=INDEX_DIR / f"{path.stem}{path.suffix}.jsonl")
+        self.store = IndexStore(entity_path=INDEX_DIR / f"{path.stem}{path.suffix}.jsonl")
 
     def extract_namespace(self):
         """
@@ -548,7 +548,7 @@ def main():
         entity_count=entity_count
     )
 
-    extractor.store.save_index(index_version)
+    extractor.store.save_version(index_version)
 
 if __name__ == "__main__":
     main()
