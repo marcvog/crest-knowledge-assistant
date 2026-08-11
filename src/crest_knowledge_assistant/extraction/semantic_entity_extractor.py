@@ -9,9 +9,9 @@ from git import Repo
 
 from tree_sitter import Language
 
-from SemanticEntity import SemanticEntity, EntityKind
-from IndexVersion import IndexVersion
-from IndexStore import PROJECT_ROOT, INDEX_DIR, IndexStore
+from crest_knowledge_assistant.models.semantic_entity import SemanticEntity, EntityKind
+from crest_knowledge_assistant.models.index_version import IndexVersion
+from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT, INDEX_DIR, IndexStore
 
 DATA_DIR = PROJECT_ROOT / "data"
 

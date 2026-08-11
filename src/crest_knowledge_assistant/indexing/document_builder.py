@@ -1,7 +1,7 @@
-from IndexDocument import IndexDocument
-from SemanticEntity import SemanticEntity, EntityKind
-from IndexVersion import IndexVersion
-from IndexStore import PROJECT_ROOT, INDEX_DIR, DOCUMENT_DIR, IndexStore
+from crest_knowledge_assistant.models.index_document import IndexDocument
+from crest_knowledge_assistant.models.semantic_entity import SemanticEntity, EntityKind
+from crest_knowledge_assistant.models.index_version import IndexVersion
+from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT, INDEX_DIR, DOCUMENT_DIR, IndexStore
 
 from pathlib import Path
 import os

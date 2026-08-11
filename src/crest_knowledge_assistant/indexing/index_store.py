@@ -1,6 +1,6 @@
-from SemanticEntity import SemanticEntity
-from IndexVersion import IndexVersion
-from IndexDocument import IndexDocument
+from crest_knowledge_assistant.models.semantic_entity import SemanticEntity
+from crest_knowledge_assistant.models.index_version import IndexVersion
+from crest_knowledge_assistant.models.index_document import IndexDocument
 
 import os
 import json
