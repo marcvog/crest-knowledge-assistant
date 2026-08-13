@@ -2,6 +2,7 @@ from crest_knowledge_assistant.models.index_document import IndexDocument
 from crest_knowledge_assistant.models.semantic_entity import SemanticEntity, EntityKind
 from crest_knowledge_assistant.models.index_version import IndexVersion
 from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT, INDEX_DIR, DOCUMENT_DIR, IndexStore
+from crest_knowledge_assistant.file_utils import get_file_paths
 
 from pathlib import Path
 import os
@@ -57,26 +58,12 @@ class DocumentBuilder:
         self.index_documents.clear()
 
 
-
-# move this function to a tools module
-def get_file_paths(folder: Path) -> list[str]:
-    file_paths = []
-    for (dirpath, dirnames, filenames) in os.walk(folder):
-        dirnames[:] = [d for d in dirnames if d not in ['.git']]
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            file_paths.append(file_path)
-    return file_paths
-
-
 def main():
 
     builder = DocumentBuilder()
     file_paths = get_file_paths(INDEX_DIR)
 
     for path in file_paths:
-        #print(path)
-        path = Path(path)
         builder.store.entity_path = path
         builder.semantic_entities = builder.store.load_entities()
         for entity in builder.semantic_entities:

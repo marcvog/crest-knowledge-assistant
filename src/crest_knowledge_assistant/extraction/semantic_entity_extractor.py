@@ -12,6 +12,7 @@ from tree_sitter import Language
 from crest_knowledge_assistant.models.semantic_entity import SemanticEntity, EntityKind
 from crest_knowledge_assistant.models.index_version import IndexVersion
 from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT, INDEX_DIR, IndexStore
+from crest_knowledge_assistant.file_utils import get_file_paths
 
 DATA_DIR = PROJECT_ROOT / "data"
 
@@ -41,16 +42,6 @@ def find_by_field(node, field_name):
         results.extend(find_by_field(child, field_name))
 
     return results
-
-
-def get_file_paths(folder):
-    file_paths = []
-    for (dirpath, dirnames, filenames) in os.walk(folder):
-        dirnames[:] = [d for d in dirnames if d not in ['.git']]
-        for filename in filenames:
-            file_path = os.path.join(dirpath, filename)
-            file_paths.append(file_path)
-    return file_paths
 
 
 def print_node(node):
@@ -505,11 +496,14 @@ def main():
     
     # Now you can import modules from the parent directory
     #from crest_knowledge_assistant.indexing import some_module  # Replace with actual module name
-    folder = DATA_DIR / "CrestApi"
 
-    file_paths = get_file_paths(folder.resolve())
-    file_paths = [Path(file_path) for file_path in file_paths if ".cxx" in file_path or ".h" in file_path]
-    #file_paths = [Path(file_path) for file_path in file_paths if ".cxx" in file_path]
+    #file_paths = get_file_paths(DATA_DIR / "CrestApi")
+
+    file_paths: list[Path] = [
+        file_path
+        for file_path in get_file_paths(DATA_DIR / "CrestApi")
+        if file_path.suffix in {".cxx", ".h"}
+    ]
     print(file_paths)
 
     # Source file

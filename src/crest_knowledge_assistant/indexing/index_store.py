@@ -38,12 +38,11 @@ class IndexStore:
 
     def load_entities(self) -> list[SemanticEntity]:
         entities = []
-        if self.entity_path.exists():
-            with self.entity_path.open("r", encoding="utf-8") as file:
-                for line in file:
-                    data = json.loads(line)
-                    entity = SemanticEntity.from_dict(data)
-                    entities.append(entity)
+        with self.entity_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                data = json.loads(line)
+                entity = SemanticEntity.from_dict(data)
+                entities.append(entity)
         return entities
 
     def save_documents(self, documents: list[IndexDocument]) -> None:
@@ -51,3 +50,12 @@ class IndexStore:
             for document in documents:
                 json.dump(document.to_dict(), file)
                 file.write("\n")
+
+    def load_documents(self) -> list[IndexDocument]:
+        documents = []
+        with self.document_path.open("r", encoding="utf-8") as file:
+            for line in file:
+                data = json.loads(line)
+                document = IndexDocument.from_dict(data)
+                documents.append(document)
+        return documents
