@@ -2,8 +2,8 @@
 
 ![nomades logo](https://nomades.ch/wp-content/themes/nomades_23/assets/imgs/logo-nomades.png)
 
-## <COURSE ID>
-## <YOUR NAME>
-## <YOUR EMAIL>
+## PPL 2026 3T
+## Marcelo Vogel
+## marcvogelg@gmail.com
 
 ## Description
