@@ -1,3 +1,13 @@
+# Nomades project
+
+![nomades logo](https://nomades.ch/wp-content/themes/nomades_23/assets/imgs/logo-nomades.png)
+
+## PPL 2026 3T
+## Marcelo Vogel
+## marcvogelg@gmail.com
+
+## Description
+
 # CREST Knowledge Assistant
 
 An AI-powered engineering assistant combining Retrieval-Augmented Generation (RAG), technical documentation retrieval, and source code understanding for scientific software projects.
