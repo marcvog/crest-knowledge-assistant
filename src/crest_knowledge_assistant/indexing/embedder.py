@@ -1,13 +1,15 @@
 from openai import OpenAI
+from dotenv import load_dotenv
 
 
-class Embedder:
-    def __init__(self, model: str = "text-embedding-3-small"):
-        self.client = OpenAI()
+class Embedder(OpenAI):
+    def __init__(self, model: str = "text-embedding-3-small", **kwargs):
+        super().__init__(**kwargs)
         self.model = model
 
     def embed_text(self, text: str) -> list[float]:
-        response = self.client.embeddings.create(
+        load_dotenv()
+        response = self.embeddings.create(
             model=self.model,
             input=text,
         )
