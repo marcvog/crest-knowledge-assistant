@@ -10,7 +10,7 @@ def main() -> None:
 
     store: IndexStore = IndexStore()
     file_paths: list[Path] = get_file_paths(DOCUMENT_DIR)
-    path: Path = Path(DOCUMENT_DIR / "CrestAuth.h_index_documents.json")
+    path: Path = Path(DOCUMENT_DIR / "ChannelSetDto.cxx_index_documents.json")
     store.document_path = path
     index_documents: list[IndexDocument] = store.load_documents()
 
