@@ -48,8 +48,8 @@ class DocumentBuilder:
             "qualified_name": entity.qualified_name,
             "namespace": entity.namespace or "",
             "source_file": str(entity.source_file),
-            "start_line": str(entity.start_line),
-            "end_line": str(entity.end_line),
+            "start_line": entity.start_line,
+            "end_line": entity.end_line,
         }
 
 
