@@ -6,7 +6,7 @@ class IndexDocument:
     fragment_id: str
     entity_id: str
     text: str
-    metadata: dict[str, str]
+    metadata: dict[str, str | int]
 
     def to_dict(self) -> dict:
         dictionary = {

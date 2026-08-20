@@ -22,4 +22,5 @@ build/
 
 dump*
 
-api-key.txt
+# Milvus database
+db/
