@@ -195,7 +195,7 @@ class VectorStore:
     def search(
         self,
         query_vector: list[float],
-        top_k: int = 3,
+        top_k: int = 5,
     ) -> list[SearchHit]:
 
         raw = self.client.search(
