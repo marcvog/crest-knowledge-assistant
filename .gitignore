@@ -24,3 +24,7 @@ dump*
 
 # Milvus database
 db/
+
+# Streamlit
+.agents
+
