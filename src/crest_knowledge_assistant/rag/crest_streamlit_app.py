@@ -67,12 +67,18 @@ if question := st.chat_input("Ask a question about CREST..."):
     with st.chat_message("assistant"):
         with st.spinner("Searching CREST and preparing an answer..."):
             try:
-                query_router = get_query_router()
-                pipeline_type = query_router.route(question)
-                if pipeline_type == "structural":
-                    answer, hits = get_struct_pipeline().answer(question, top_k=top_k)
+                routed_query = get_query_router().route(question)
+                if routed_query.pipeline == "structural":
+                    answer, hits = get_struct_pipeline().answer(
+                        routed_query.structural_query
+                        )
+                    if not hits:
+                        answer, hits = get_rag_pipeline().answer(
+                            question,
+                            top_k=top_k,
+                        )
                 else:
-                    answer, hits = get_rag_pipeline().answer(question, top_k=top_k)
+                    answer, hits = get_rag_pipeline().answer(question)
             except Exception as exc:
                 st.error(f"The assistant could not answer: {exc}")
             else:
@@ -81,6 +87,7 @@ if question := st.chat_input("Ask a question about CREST..."):
                 st.session_state.messages.append(
                     {"role": "assistant", "content": answer}
                 )
+                st.caption(f"Route: {routed_query.pipeline}")
                 with st.expander("Retrieved documents"):
                     for i, hit in enumerate(hits, start=1):
                         st.markdown(
