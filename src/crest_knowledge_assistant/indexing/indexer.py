@@ -61,7 +61,7 @@ class Indexer:
             if on_progress:
                 on_progress("embedding", 1, 1)
 
-            records = [self.vector_store._build_record(doc,vec) for doc, vec in zip(index_documents,vectors)]
+            records = [self.vector_store.build_record(doc,vec) for doc, vec in zip(index_documents,vectors)]
             #print(f"records: {records}")
 
             if on_progress:

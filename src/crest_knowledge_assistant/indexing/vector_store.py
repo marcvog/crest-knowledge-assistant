@@ -158,9 +158,9 @@ class VectorStore:
 
         return {"row_count": 0}
 
-
-    def _build_record(
-            self,
+    @classmethod
+    def build_record(
+            cls,
             document: IndexDocument,
             vector: list[float],
         ) -> dict[str, Any]:

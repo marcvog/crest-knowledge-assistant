@@ -81,9 +81,10 @@ class RAGPipeline:
         return self.generator.generate(system, user)
     
 
-    def answer(self, question: str, top_k: int = 5) -> str:
+    def answer(self, question: str, top_k: int = 5) -> tuple[str, list[SearchHit]]:
         hits = self.retrieve(question, top_k)
-        return self.generate(question,hits)
+        _answer = self.generate(question, hits)
+        return _answer, hits
 
     
 def main() -> None:
