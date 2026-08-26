@@ -22,7 +22,6 @@ class RoutedQuery:
 
 class QueryRouter:
     def route(self, question: str) -> RoutedQuery:
-        print("I am in the route function:wq")
         structural_query = self.parse_structural_query(question)
 
         if structural_query:

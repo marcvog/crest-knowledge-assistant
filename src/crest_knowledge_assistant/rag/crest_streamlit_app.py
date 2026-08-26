@@ -5,17 +5,21 @@ Run from the project root with:
 """
 
 import streamlit as st
+import re
 
 from crest_knowledge_assistant.rag.rag_pipeline import RAGPipeline
 from crest_knowledge_assistant.structural.query_router import QueryRouter
 from crest_knowledge_assistant.structural.structural_pipeline import StructPipeline
 
+MAX_HISTORY_TURNS = 3
+
+def clean_history_message(text: str) -> str:
+    return re.sub(r"\[\d+\]", "", text).strip()
 
 st.set_page_config(
     page_title="CREST Knowledge Assistant",
     page_icon="💬",
 )
-
 
 @st.cache_resource
 def get_rag_pipeline() -> RAGPipeline:
@@ -35,6 +39,8 @@ def get_query_router() -> QueryRouter:
 if "messages" not in st.session_state:
     st.session_state.messages = []
 
+if "rag_history" not in st.session_state:
+    st.session_state.rag_history = []
 
 st.title("CREST Knowledge Assistant")
 st.caption("Ask questions about the CREST software project.")
@@ -49,12 +55,9 @@ with st.sidebar:
         help="How many relevant code chunks to give to the language model.",
     )
 
-
-
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
-
 
 if question := st.chat_input("Ask a question about CREST..."):
     st.session_state.messages.append(
@@ -67,20 +70,26 @@ if question := st.chat_input("Ask a question about CREST..."):
     with st.chat_message("assistant"):
         with st.spinner("Searching CREST and preparing an answer..."):
             try:
-                print(f"Routing question: {question}")
                 routed_query = get_query_router().route(question)
+                used_rag = False
                 if routed_query.pipeline == "structural":
-                    print(f"Answering structural query: {routed_query.structural_query}")
                     answer, hits = get_struct_pipeline().answer(
                         routed_query.structural_query
                         )
                     if not hits:
+                        used_rag = True
                         answer, hits = get_rag_pipeline().answer(
                             question,
                             top_k=top_k,
+                            history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS:]
                         )
                 else:
-                    answer, hits = get_rag_pipeline().answer(question)
+                    used_rag = True
+                    answer, hits = get_rag_pipeline().answer(
+                        question,
+                        top_k=top_k,
+                        history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS:]
+                    )
             except Exception as exc:
                 st.error(f"The assistant could not answer: {exc}")
             else:
@@ -89,6 +98,11 @@ if question := st.chat_input("Ask a question about CREST..."):
                 st.session_state.messages.append(
                     {"role": "assistant", "content": answer}
                 )
+                if used_rag:
+                    st.session_state.rag_history.extend([
+                        {"role": "user", "content": question},
+                        {"role": "assistant", "content": clean_history_message(answer)},
+                    ])
                 st.caption(f"Route: {routed_query.pipeline}")
                 with st.expander("Retrieved documents"):
                     for i, hit in enumerate(hits, start=1):

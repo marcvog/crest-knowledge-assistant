@@ -9,16 +9,12 @@ class Generator:
 
     def generate(
         self,
-        system_prompt: str,
-        user_prompt: str,
+        messages: list[dict[str, str]],
     ) -> str:
         response = self.client.chat.completions.create(
             model=self.model,
             temperature=self.temperature,
-            messages=[
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_prompt},
-            ],
+            messages=messages,
         )
 
         return response.choices[0].message.content or ""
