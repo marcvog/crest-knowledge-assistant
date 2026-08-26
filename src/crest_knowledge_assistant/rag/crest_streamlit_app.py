@@ -92,6 +92,12 @@ with st.sidebar:
         help="How many relevant code chunks to give to the language model.",
     )
 
+    st.container(height="stretch")
+
+    if st.button("Log out", width="stretch"):
+        st.session_state.authenticated = False
+        st.rerun()
+
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
         st.markdown(message["content"])
