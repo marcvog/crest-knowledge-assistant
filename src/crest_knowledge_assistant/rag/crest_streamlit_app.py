@@ -67,8 +67,10 @@ if question := st.chat_input("Ask a question about CREST..."):
     with st.chat_message("assistant"):
         with st.spinner("Searching CREST and preparing an answer..."):
             try:
+                print(f"Routing question: {question}")
                 routed_query = get_query_router().route(question)
                 if routed_query.pipeline == "structural":
+                    print(f"Answering structural query: {routed_query.structural_query}")
                     answer, hits = get_struct_pipeline().answer(
                         routed_query.structural_query
                         )

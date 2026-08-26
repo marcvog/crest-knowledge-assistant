@@ -1,15 +1,20 @@
 from crest_knowledge_assistant.indexing.vector_store import SearchHit
 from crest_knowledge_assistant.models.index_document import IndexDocument
-from crest_knowledge_assistant.indexing.index_store import IndexStore, INDEX_DIR
+from crest_knowledge_assistant.indexing.index_store import IndexStore, DOCUMENT_DIR
 from crest_knowledge_assistant.structural.query_router import QueryIntent, StructuralQuery
+from crest_knowledge_assistant.file_utils import get_file_paths
 
 class StructPipeline:
     def __init__(self):
-        self.index_store = IndexStore(document_path=INDEX_DIR)
+        self.index_store = IndexStore()
 
     def answer(self, structural_query: StructuralQuery) -> tuple[str, list[SearchHit]]:
 
-        index_documents = self.index_store.load_documents()
+        index_documents: list[IndexDocument] = []
+        for path in get_file_paths(DOCUMENT_DIR):
+            self.index_store.document_path=path
+            index_documents.extend(self.index_store.load_documents())
+        print(index_documents)
 
         if structural_query.intent == QueryIntent.LIST_METHODS:
             hits = self._list_methods(
