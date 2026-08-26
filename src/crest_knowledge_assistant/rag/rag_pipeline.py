@@ -52,7 +52,12 @@ class RAGPipeline:
         return self.vector_store.search(query_vector, top_k=top_k)
 
 
-    def generate(self, question: str, hits: list[SearchHit]) -> str:
+    def generate(
+            self,
+            question: str,
+            hits: list[SearchHit],
+            history: list[dict[str, str]] | None = None,
+        ) -> str:
 
         context_block = "\n\n".join(
             (
@@ -73,17 +78,32 @@ class RAGPipeline:
             "the question, say so rather than guessing."
         )
 
-        user = (
-            f"Context:\n{context_block}\n\n"
-            f"Question: {question}"
-        )
+        messages = [
+            {"role": "system", "content": system},
+        ]
 
-        return self.generator.generate(system, user)
+        if history:
+            messages.extend(history)
+
+        messages.append({
+            "role": "user",
+            "content": (
+                f"Retrieved context:\n{context_block}\n\n"
+                f"Question: {question}"
+            ),
+        })
+
+        return self.generator.generate(messages)
     
 
-    def answer(self, question: str, top_k: int = 5) -> tuple[str, list[SearchHit]]:
+    def answer(
+            self,
+            question: str,
+            top_k: int = 5,
+            history: list[dict[str, str]] | None = None,
+        ) -> tuple[str, list[SearchHit]]:
         hits = self.retrieve(question, top_k)
-        _answer = self.generate(question, hits)
+        _answer = self.generate(question, hits, history=history)
         return _answer, hits
 
     
