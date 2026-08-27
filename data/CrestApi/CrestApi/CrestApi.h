@@ -577,40 +577,8 @@ class CrestApi : public CrestApiBase {
   RunLumiSetDto listRunInfo(const std::string &since, const std::string &until,
                             const std::string format, const std::string mode,
                             int size, int page, const std::string &sort);
-  // -------------------------------------------------------------------------
-  // Toy nested class for testing the semantic-entity extractor
-  // -------------------------------------------------------------------------
-  class NestedProbe {
-   public:
-    int doubleValue(int value) const;
-  };
-  enum class ToyColor {
-      Red,
-      Green,
-      Blue
-  };
-
-  struct ToyStruct {
-      int value;
-      void reset() {
-          value = 0;
-      }
-  };
 
 };
-
-// ---------------------------------------------------------------------------
-// Toy nested namespace for testing the semantic-entity extractor
-// ---------------------------------------------------------------------------
-namespace Testing {
-
-class NamespaceProbe {
- public:
-  int increment(int value) const;
-};
-
-}  // namespace Testing
-
 
 }  // namespace Crest
 

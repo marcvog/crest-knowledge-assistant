@@ -10,6 +10,43 @@ import re
 from crest_knowledge_assistant.rag.rag_pipeline import RAGPipeline
 from crest_knowledge_assistant.structural.query_router import QueryRouter
 from crest_knowledge_assistant.structural.structural_pipeline import StructPipeline
+from dotenv import load_dotenv
+
+import os
+import hmac
+import streamlit as st
+
+load_dotenv()  # Load environment variables from .env file
+
+def check_password() -> None:
+    expected_password = os.getenv("APP_PASSWORD")
+
+    if not expected_password:
+        raise RuntimeError("APP_PASSWORD is not configured")
+
+    if "authenticated" not in st.session_state:
+        st.session_state.authenticated = False
+
+    if st.session_state.authenticated:
+        return
+
+    password = st.text_input(
+        "Password",
+        type="password",
+    )
+
+    if not password:
+        st.stop()
+
+    if hmac.compare_digest(password, expected_password):
+        st.session_state.authenticated = True
+        st.rerun()
+
+    st.error("Incorrect password")
+    st.stop()
+
+
+check_password()
 
 MAX_HISTORY_TURNS = 3
 
@@ -54,6 +91,12 @@ with st.sidebar:
         value=5,
         help="How many relevant code chunks to give to the language model.",
     )
+
+    st.container(height="stretch")
+
+    if st.button("Log out", width="stretch"):
+        st.session_state.authenticated = False
+        st.rerun()
 
 for message in st.session_state.messages:
     with st.chat_message(message["role"]):
