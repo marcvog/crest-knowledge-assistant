@@ -26,11 +26,11 @@ def _require_env(name: str) -> str:
 
     return value
 
-# MILVUS_URI   = _require_env("MILVUS_URI")
-# MILVUS_TOKEN = _require_env("MILVUS_KEY")
+MILVUS_URI   = _require_env("MILVUS_URI")
+MILVUS_TOKEN = _require_env("MILVUS_KEY")
 
-uri = "db/milvus.db"
-token = None
+# MILVUS_URI = "db/milvus.db"
+# MILVUS_TOKEN = None
 
 EMBED_MODEL     = indexer.EMBED_MODEL
 EMBED_DIM       = indexer.EMBED_DIM
@@ -44,7 +44,7 @@ class RAGPipeline:
     def __init__(self):
         self.generator = Generator()
         self.embedder = Embedder(EMBED_MODEL, EMBED_DIM)
-        self.vector_store = VectorStore(uri, COLLECTION_NAME, EMBED_DIM, token)
+        self.vector_store = VectorStore(MILVUS_URI, COLLECTION_NAME, EMBED_DIM, MILVUS_TOKEN)
 
 
     def retrieve(self, question: str, top_k: int = 5) -> list[SearchHit]:

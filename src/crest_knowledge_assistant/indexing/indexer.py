@@ -22,11 +22,11 @@ EMBED_DIM   = 1536                          # dimension of text-embedding-3-smal
 COLLECTION  = "crest_knowledge_base_v1"     # Milvus collection name
 
 load_dotenv()
-# uri = os.getenv("MILVUS_URI")
-# token = os.getenv("MILVUS_KEY")
+uri = os.getenv("MILVUS_URI")
+token = os.getenv("MILVUS_KEY")
 
-uri = "db/milvus.db"
-token = None
+# uri = "db/milvus.db"
+# token = None
 
 
 class Indexer:

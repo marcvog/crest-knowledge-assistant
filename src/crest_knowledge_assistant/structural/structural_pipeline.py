@@ -14,7 +14,6 @@ class StructPipeline:
         for path in get_file_paths(DOCUMENT_DIR):
             self.index_store.document_path=path
             index_documents.extend(self.index_store.load_documents())
-        print(index_documents)
 
         if structural_query.intent == QueryIntent.LIST_METHODS:
             hits = self._list_methods(
