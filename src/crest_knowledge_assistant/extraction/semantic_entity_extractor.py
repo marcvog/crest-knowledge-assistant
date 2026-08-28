@@ -537,7 +537,8 @@ def main():
     print(f'Total entities extracted: {entity_count}')
     index_version = IndexVersion(
         version_id=str(uuid4()),
-        git_reference=get_git_reference(PROJECT_ROOT),
+        source_git_reference=get_git_reference(DATA_DIR / "CrestApi"),
+        application_git_reference=get_git_reference(PROJECT_ROOT),
         indexing_date=datetime.now(UTC).isoformat(),
         entity_count=entity_count
     )
