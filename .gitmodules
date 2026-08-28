@@ -1,0 +1,3 @@
+[submodule "data/CrestApi"]
+	path = data/CrestApi
+	url = https://gitlab.cern.ch/crest-db/CrestApi.git
