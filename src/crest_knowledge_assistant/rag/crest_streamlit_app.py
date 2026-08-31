@@ -114,20 +114,19 @@ if question := st.chat_input("Ask a question about CREST..."):
         with st.spinner("Searching CREST and preparing an answer..."):
             try:
                 routed_query = get_query_router().route(question)
-                used_rag = False
+                actual_route = routed_query.pipeline
                 if routed_query.pipeline == "structural":
                     answer, hits = get_struct_pipeline().answer(
                         routed_query.structural_query
                         )
                     if not hits:
-                        used_rag = True
+                        actual_route = "semantic"
                         answer, hits = get_rag_pipeline().answer(
                             question,
                             top_k=top_k,
                             history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS:]
                         )
                 else:
-                    used_rag = True
                     answer, hits = get_rag_pipeline().answer(
                         question,
                         top_k=top_k,
@@ -141,12 +140,12 @@ if question := st.chat_input("Ask a question about CREST..."):
                 st.session_state.messages.append(
                     {"role": "assistant", "content": answer}
                 )
-                if used_rag:
+                if actual_route == "semantic":
                     st.session_state.rag_history.extend([
                         {"role": "user", "content": question},
                         {"role": "assistant", "content": clean_history_message(answer)},
                     ])
-                st.caption(f"Route: {routed_query.pipeline}")
+                st.caption(f"Route: {actual_route}")
                 with st.expander("Retrieved documents"):
                     for i, hit in enumerate(hits, start=1):
                         st.markdown(

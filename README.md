@@ -43,6 +43,40 @@ Although initially developed around the public ATLAS CREST repositories, the arc
 * Docker
 * GitHub Actions
 
+## Setup and Usage
+
+Run the following commands from the project root in the order shown.
+
+### Offline indexing and ingestion pipeline
+
+The first three steps prepare the searchable knowledge base. Run them whenever the source data needs to be extracted and reindexed.
+
+1. Extract semantic entities:
+
+   ```bash
+   uv run python src/crest_knowledge_assistant/extraction/semantic_entity_extractor.py
+   ```
+
+2. Create index documents:
+
+   ```bash
+   uv run python src/crest_knowledge_assistant/indexing/document_builder.py
+   ```
+
+3. Insert embeddings (vectors) into the vector database:
+
+   ```bash
+   uv run python src/crest_knowledge_assistant/indexing/indexer.py
+   ```
+
+### Online chat interface
+
+After the offline pipeline has completed, start the Streamlit chat interface:
+
+```bash
+uv run streamlit run src/crest_knowledge_assistant/rag/crest_streamlit_app.py
+```
+
 ## Status
 
 🚧 Project under active development.
