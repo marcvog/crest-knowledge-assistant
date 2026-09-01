@@ -485,45 +485,16 @@ class EntityExtractor:
 
 
 def main():
-    # Get the current working directory
-    #cwd = Path(os.getcwd())
     
-    # Get the parent directory of the current working directory
-    #parent_dir = cwd.parent
-    
-    # Add the parent directory to sys.path
-    #sys.path.append(str(parent_dir))
-    
-    # Now you can import modules from the parent directory
-    #from crest_knowledge_assistant.indexing import some_module  # Replace with actual module name
-
-    #file_paths = get_file_paths(DATA_DIR / "CrestApi")
-
     file_paths: list[Path] = [
         file_path
         for file_path in get_file_paths(DATA_DIR / "CrestApi")
         if file_path.suffix in {".cxx", ".h"}
     ]
     print(file_paths)
-
-    # Source file
-    #path = Path("../../data/CrestApi/src/CrestApi.cxx")
-    #path = Path("../../data/CrestApi/CrestApi/CrestApi.h")
-    #path = Path("../../data/CrestApi/CrestApi/CrestRequest.h")
-    #path = Path("../../data/CrestApi/CrestApi/ChannelSetDto.h")
-    #path = Path("../../data/CrestApi/src/CrestRequest.cxx")
-    #path = Path("../../data/CrestApi/tools/CrestContainer.cxx")
-    #path = Path("../../data/CrestApi/test/test_utils.h")
     
     language = Language(tree_sitter_cpp.language())
     parser = LanguageParser(language)
-
-    # tree = parser.parse(path.read_bytes())
-    # print(tree.root_node.type)
-    # extractor = EntityExtractor(path)
-    # extractor.walk(tree.root_node)
-    # print(f'entities length: {len(extractor.entities)}')
-    # extractor.store.save_entities(extractor.entities)
 
     entity_count = 0
     for path in file_paths:
