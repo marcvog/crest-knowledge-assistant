@@ -15,6 +15,12 @@ The project integrates Retrieval-Augmented Generation (RAG), semantic search, an
 
 Although initially developed around the public ATLAS CREST repositories, the architecture is intended to be reusable for other scientific software projects.
 
+## Architecture
+
+The system consists of an offline indexing and ingestion pipeline and an online query and retrieval pipeline:
+
+![CREST Knowledge Assistant architecture](docs/architecture.png)
+
 ## Objectives
 
 * Build a scalable RAG pipeline for technical documentation.
