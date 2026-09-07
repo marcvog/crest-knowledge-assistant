@@ -72,7 +72,3 @@ After the offline pipeline has completed, start the Streamlit chat interface:
 ```bash
 uv run streamlit run src/crest_knowledge_assistant/rag/crest_streamlit_app.py
 ```
-
-## Status
-
-🚧 Project under active development.
