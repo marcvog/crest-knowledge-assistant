@@ -44,6 +44,36 @@ def find_by_field(node, field_name):
     return results
 
 
+def is_namespace_or_file_scope(node):
+    parent = node.parent
+
+    while parent is not None:
+        if parent.type in {
+            "function_definition",
+            "class_specifier",
+            "struct_specifier",
+            "lambda_expression",
+        }:
+            return False
+
+        if parent.type == "translation_unit":
+            return True
+
+        parent = parent.parent
+
+    return False
+
+
+def contains_node_type(node, node_type):
+    if node.type == node_type:
+        return True
+
+    return any(
+        contains_node_type(child, node_type)
+        for child in node.named_children
+    )
+
+
 def print_node(node):
     print('-----node description--------')
     print(f'Node type: {node.type}')
@@ -56,6 +86,7 @@ def print_node(node):
 def get_git_reference(project_root: Path) -> str:
     repo = Repo(project_root)
     return repo.head.commit.hexsha
+
 
 class EntityExtractor:
     def __init__(self, path: Path):
@@ -165,21 +196,25 @@ class EntityExtractor:
             print(f'Entity: {entity}')
             return entity
 
+        elif node.type == "expression_statement":
+            entity = self.process_expression_node(node, path)
+            print(f'Entity: {entity}')
+            return entity
+
+        elif node.type == "declaration" and is_namespace_or_file_scope(node):
+            entity = self.process_declaration_node(node, path)
+            print(f'Entity: {entity}')
+            return entity
+
         return None
 
 
     def process_function_node(self, node, path):
 
         source_bytes = path.read_bytes()
-        body = node.child_by_field_name("body")
 
         if node.type == "function_definition":
             self.print_function_type(node)
-
-            # declarators = find_by_field(node, "declarator")
-            # for node in declarators:
-            #     print(node.type, node.text)
-
             identifier_node = None
             declarator_node = node.child_by_field_name("declarator")
             if declarator_node.type == "function_declarator":
@@ -200,15 +235,28 @@ class EntityExtractor:
                 print(f'Fully qualified name: {fully_qualified_name}')
 
             elif identifier_node.type == "identifier": # free functions and inline constructors
-                if len(self.class_stack)>0:
+                if len(self.class_stack)>0 or len(self.struct_stack)>0:
                     kind = EntityKind.METHOD
                 else:
                     kind = EntityKind.FUNCTION
-                name = identifier_node.text.decode()
+                name = identifier_node.text.decode() 
+                parameter_types = []             
+                if name.lstrip().startswith("TEST"):
+                    kind = EntityKind.TEST
+                    parameter_list = declarator_node.child_by_field_name("parameters")
+                    for parameter in parameter_list.named_children:
+                        if parameter.type == "parameter_declaration":
+                            type_node = parameter.child_by_field_name("type")
+                            if type_node is not None:
+                                parameter_types.append(type_node.text.decode())
+                    print(f"Test parameters: {parameter_types}")
+                    name = parameter_types[1]
                 parts = []
                 parts.extend(self.namespace_stack)
                 parts.extend(self.class_stack)
                 parts.extend(self.struct_stack)
+                if len(parameter_types)>0:
+                    parts.extend(parameter_types[0:1])
                 if name:
                     parts.append(name)
                 fully_qualified_name = "::".join(parts)
@@ -227,7 +275,7 @@ class EntityExtractor:
                 print(f'Fully qualified name: {fully_qualified_name}')
 
             elif identifier_node.type == "operator_name": # operator overload
-                if len(self.class_stack)>0:
+                if len(self.class_stack)>0 or len(self.struct_stack)>0:
                     kind = EntityKind.METHOD
                 else:
                     kind = EntityKind.FUNCTION
@@ -242,7 +290,10 @@ class EntityExtractor:
                 print(f'Fully qualified name: {fully_qualified_name}')
 
             elif identifier_node.type == "destructor_name":# inline destructor 
-                kind = EntityKind.METHOD
+                if len(self.class_stack)>0 or len(self.struct_stack)>0:
+                    kind = EntityKind.METHOD
+                else:
+                    kind = EntityKind.FUNCTION
                 name = identifier_node.text.decode()
                 parts = []
                 parts.extend(self.namespace_stack)
@@ -273,17 +324,17 @@ class EntityExtractor:
                 + b"\0"
                 + source_bytes[node.start_byte : end.start_byte]
             ).hexdigest()
-            
+            signature=source_bytes[node.start_byte : end.start_byte].decode("utf-8")
             entity = SemanticEntity(
                 id=id,
-                kind=kind,
+                kind=EntityKind.TEST if signature.lstrip().startswith("TEST") else kind,
                 name=name,
                 qualified_name=fully_qualified_name,
                 namespace=self.extract_namespace(),
                 source_file=path,
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
-                signature=source_bytes[node.start_byte : end.start_byte].decode("utf-8"),
+                signature=signature,
                 documentation=None,
                 source_code=node.text.decode("utf-8")
             )
@@ -395,8 +446,11 @@ class EntityExtractor:
             print(f'Fully qualified enum name: {fully_qualified_name}')
 
             # unique identifier
+            relative_source_file = path.relative_to(DATA_DIR)
             id=hashlib.sha256(
-                fully_qualified_name.encode("utf-8")
+                relative_source_file.as_posix().encode("utf-8")
+                + b"\0"
+                + fully_qualified_name.encode("utf-8")
                 + b"\0"
                 + source_bytes[node.start_byte : body.start_byte]
             ).hexdigest()
@@ -418,15 +472,133 @@ class EntityExtractor:
         
         return None
 
+    def process_expression_node(self, node, path: Path):
+
+        source_bytes = path.read_bytes()
+
+        if node.type == "expression_statement":
+            call_expression_node = first_child_of_type(node, "call_expression")
+            if call_expression_node:
+                identifier_node = call_expression_node.child_by_field_name("function")
+                argument_list_node = call_expression_node.child_by_field_name("arguments")
+                if identifier_node.text.decode("utf-8").lstrip().startswith("INSTANTIATE_TEST_SUITE_P"):
+                    kind = EntityKind.TEST_INSTANTIATION
+                    args = argument_list_node.named_children
+                    if (
+                        len(args) >= 2
+                        and args[0].type == "identifier"
+                        and args[1].type == "identifier"
+                    ):
+                        instance_name = args[0].text.decode("utf-8")
+                        test_suite = args[1].text.decode("utf-8")
+                    if instance_name and test_suite:
+                        name = instance_name
+                        parts = []
+                        parts.extend(self.namespace_stack)
+                        parts.extend(self.class_stack)
+                        parts.extend([test_suite])
+                        parts.append(name)
+                        fully_qualified_name = "::".join(parts)
+                        print(f'Fully qualified enum name: {fully_qualified_name}')
+
+                        # unique identifier
+                        relative_source_file = path.relative_to(DATA_DIR)
+                        id=hashlib.sha256(
+                            relative_source_file.as_posix().encode("utf-8")
+                            + b"\0"
+                            + fully_qualified_name.encode("utf-8")
+                            + b"\0"
+                            + source_bytes[node.start_byte : call_expression_node.end_byte]
+                        ).hexdigest()
+
+                        entity = SemanticEntity(
+                            id=id,
+                            kind=kind,
+                            name=name,
+                            qualified_name=fully_qualified_name,
+                            namespace=self.extract_namespace(),
+                            source_file=path,
+                            start_line=node.start_point[0] + 1,
+                            end_line=node.end_point[0] + 1,
+                            signature=source_bytes[node.start_byte : call_expression_node.end_byte].decode("utf-8"),
+                            documentation=None,
+                            source_code=node.text.decode("utf-8")
+                        )
+                        return entity
+
+        return None
+
+
+    def process_declaration_node(self, node, path: Path):
+
+        source_bytes = path.read_bytes()
+
+        if node.type == "declaration":
+            if not contains_node_type(node, "function_declarator"):
+                type_qualifier_node = first_child_of_type(node, "type_qualifier")
+                if type_qualifier_node:
+                    type = type_qualifier_node.text.decode("utf-8")
+                    if type == "const" or type == "constexpr":
+                        init_declarator_node = node.child_by_field_name("declarator")
+                        if init_declarator_node:
+                            identifier_node = init_declarator_node.child_by_field_name("declarator")
+                            if identifier_node and identifier_node.type == "identifier":
+                                name = identifier_node.text.decode("utf-8")
+                                print(f'Constant name: {name}')
+                            
+                                kind = EntityKind.CONSTANT
+                                parts = []
+                                parts.extend(self.namespace_stack)
+                                parts.extend(self.class_stack)
+                                parts.append(name)
+                                fully_qualified_name = "::".join(parts)
+                                print(f'Fully qualified enum name: {fully_qualified_name}')
+
+                                # unique identifier
+                                relative_source_file = path.relative_to(DATA_DIR)
+                                id=hashlib.sha256(
+                                    relative_source_file.as_posix().encode("utf-8")
+                                    + b"\0"
+                                    + fully_qualified_name.encode("utf-8")
+                                    + b"\0"
+                                    + source_bytes[node.start_byte : identifier_node.end_byte]
+                                ).hexdigest()
+
+                                entity = SemanticEntity(
+                                    id=id,
+                                    kind=kind,
+                                    name=name,
+                                    qualified_name=fully_qualified_name,
+                                    namespace=self.extract_namespace(),
+                                    source_file=path,
+                                    start_line=node.start_point[0] + 1,
+                                    end_line=node.end_point[0] + 1,
+                                    signature=source_bytes[node.start_byte : identifier_node.end_byte].decode("utf-8"),
+                                    documentation=None,
+                                    source_code=node.text.decode("utf-8")
+                                )
+                                return entity
+
+        return None
+
+
 
     def walk(self, node, level=0):
 
         entity = None
         print("  " * level + node.type)
+        #print_node(node)
 
         if node.type == "namespace_definition":
             name_node = node.child_by_field_name("name")
-            namespace = name_node.text.decode() if name_node.type == "namespace_identifier" else None
+            if name_node:
+                if name_node.type == "namespace_identifier":
+                    namespace = name_node.text.decode()
+                else:
+                    namespace = None
+            else:
+                namespace = "<anonymous>"
+
             print(f'Namespace Identifier text: {namespace}')
             self.namespace_stack.append(namespace)
 
@@ -491,6 +663,9 @@ def main():
         for file_path in get_file_paths(DATA_DIR / "CrestApi")
         if file_path.suffix in {".cxx", ".h"}
     ]
+    #file_paths = [Path(DATA_DIR / "CrestApi" / "test" / "CrestApi_test.cxx")]
+    #file_paths = [Path(DATA_DIR / "CrestApi" / "src" / "StringUtils.cxx")]
+
     print(file_paths)
     
     language = Language(tree_sitter_cpp.language())

@@ -13,6 +13,9 @@ class EntityKind(Enum):
     FUNCTION = "function"
     ENUM = "enum"
     TYPE_ALIAS = "type_alias"
+    TEST = "test"
+    TEST_INSTANTIATION = "test_instantiation"
+    CONSTANT = "constant"
 
 @dataclass
 class SemanticEntity:
