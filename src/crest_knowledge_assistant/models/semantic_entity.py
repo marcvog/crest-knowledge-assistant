@@ -4,6 +4,7 @@ from pathlib import Path
 import pathlib
 
 from dataclasses import dataclass
+from typing import Any
 
 class EntityKind(Enum):
     NAMESPACE = "namespace"
@@ -30,6 +31,12 @@ class SemanticEntity:
     signature: str
     documentation: str | None
     source_code: str
+    test_macro: str | None = None
+    test_suite: str | None = None
+    test_parameter_expression: str | None = None
+    constant_value: str | None = None
+    
+
 
     def to_dict (self) -> dict:
         dictionary = {
@@ -43,7 +50,11 @@ class SemanticEntity:
                 "end_line" : self.end_line,
                 "signature" : self.signature,
                 "documentation" : self.documentation,
-                "source_code" : self.source_code
+                "source_code" : self.source_code,
+                "test_macro" : self.test_macro,
+                "test_suite" : self.test_suite,
+                "test_parameter_expression" : self.test_parameter_expression,
+                "constant_value" : self.constant_value,
         }
         return dictionary
     
@@ -60,6 +71,10 @@ class SemanticEntity:
             end_line=data["end_line"],
             signature=data["signature"],
             documentation=data["documentation"],
-            source_code=data["source_code"]
+            source_code=data["source_code"],
+            test_macro=data["test_macro"],
+            test_suite=data["test_suite"],
+            test_parameter_expression=data["test_parameter_expression"],
+            constant_value=data["constant_value"],
         )
         return entity

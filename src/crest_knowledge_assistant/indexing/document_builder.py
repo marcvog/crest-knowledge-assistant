@@ -26,7 +26,17 @@ class DocumentBuilder:
         parts: list[str] = []
 
         parts.append(f"Kind: {entity.kind.value}")
+        if entity.test_suite and entity.test_macro:
+            parts.append(f"Test suite: {entity.test_suite}")
+            parts.append(f"Test macro: {entity.test_macro}")
+
+        if entity.test_parameter_expression:
+            parts.append(f"Parameter expression: {entity.test_parameter_expression}")
+
         parts.append(f"Qualified name: {entity.qualified_name}")
+
+        if entity.constant_value:
+            parts.append(f"Value: {entity.constant_value}")
 
         if entity.namespace:
             parts.append(f"Namespace: {entity.namespace}")
@@ -50,6 +60,8 @@ class DocumentBuilder:
             "source_file": str(entity.source_file),
             "start_line": entity.start_line,
             "end_line": entity.end_line,
+            "test_macro": entity.test_macro or "",
+            "test_suite": entity.test_suite or "",
         }
 
 

@@ -114,6 +114,18 @@ class VectorStore:
             datatype=DataType.INT64,
         )
 
+        schema.add_field(
+            field_name="test_macro",
+            datatype=DataType.VARCHAR,
+            max_length=64,
+        )
+
+        schema.add_field(
+            field_name="test_suite",
+            datatype=DataType.VARCHAR,
+            max_length=512,
+        )
+
         index_params = MilvusClient.prepare_index_params()
         index_params.add_index(
             field_name="vector",
@@ -213,6 +225,8 @@ class VectorStore:
                 "source_file",
                 "start_line",
                 "end_line",
+                "test_macro",
+                "test_suite",
             ],
             search_params={
                 "metric_type": "COSINE",
@@ -239,6 +253,8 @@ class VectorStore:
                         "source_file": entity["source_file"],
                         "start_line": entity["start_line"],
                         "end_line": entity["end_line"],
+                        "test_macro": entity["test_macro"],
+                        "test_suite": entity["test_suite"],
                     },
                 )
             )

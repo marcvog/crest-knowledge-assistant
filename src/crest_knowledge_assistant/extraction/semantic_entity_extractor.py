@@ -216,6 +216,8 @@ class EntityExtractor:
         if node.type == "function_definition":
             self.print_function_type(node)
             identifier_node = None
+            test_macro = None
+            test_suite = None
             declarator_node = node.child_by_field_name("declarator")
             if declarator_node.type == "function_declarator":
                 identifier_node = declarator_node.child_by_field_name("declarator")
@@ -234,15 +236,16 @@ class EntityExtractor:
                 fully_qualified_name = "::".join(parts)
                 print(f'Fully qualified name: {fully_qualified_name}')
 
-            elif identifier_node.type == "identifier": # free functions and inline constructors
+            elif identifier_node.type == "identifier": # free functions, test macros and inline constructors
                 if len(self.class_stack)>0 or len(self.struct_stack)>0:
                     kind = EntityKind.METHOD
                 else:
                     kind = EntityKind.FUNCTION
-                name = identifier_node.text.decode() 
+                name = identifier_node.text.decode()
                 parameter_types = []             
                 if name.lstrip().startswith("TEST"):
                     kind = EntityKind.TEST
+                    test_macro = name
                     parameter_list = declarator_node.child_by_field_name("parameters")
                     for parameter in parameter_list.named_children:
                         if parameter.type == "parameter_declaration":
@@ -251,6 +254,8 @@ class EntityExtractor:
                                 parameter_types.append(type_node.text.decode())
                     print(f"Test parameters: {parameter_types}")
                     name = parameter_types[1]
+                    test_suite = parameter_types[0]
+                    
                 parts = []
                 parts.extend(self.namespace_stack)
                 parts.extend(self.class_stack)
@@ -336,7 +341,9 @@ class EntityExtractor:
                 end_line=node.end_point[0] + 1,
                 signature=signature,
                 documentation=None,
-                source_code=node.text.decode("utf-8")
+                source_code=node.text.decode("utf-8"),
+                test_macro=test_macro,
+                test_suite=test_suite,
             )
             return entity
 
@@ -483,15 +490,18 @@ class EntityExtractor:
                 argument_list_node = call_expression_node.child_by_field_name("arguments")
                 if identifier_node.text.decode("utf-8").lstrip().startswith("INSTANTIATE_TEST_SUITE_P"):
                     kind = EntityKind.TEST_INSTANTIATION
+                    test_macro: str = identifier_node.text.decode("utf-8")
                     args = argument_list_node.named_children
                     if (
-                        len(args) >= 2
+                        len(args) >= 3
                         and args[0].type == "identifier"
                         and args[1].type == "identifier"
+                        and args[2].type == "call_expression"
                     ):
                         instance_name = args[0].text.decode("utf-8")
                         test_suite = args[1].text.decode("utf-8")
-                    if instance_name and test_suite:
+                        test_parameter_expression = args[2].text.decode("utf-8")
+                    if instance_name and test_suite and test_parameter_expression:
                         name = instance_name
                         parts = []
                         parts.extend(self.namespace_stack)
@@ -522,7 +532,10 @@ class EntityExtractor:
                             end_line=node.end_point[0] + 1,
                             signature=source_bytes[node.start_byte : call_expression_node.end_byte].decode("utf-8"),
                             documentation=None,
-                            source_code=node.text.decode("utf-8")
+                            source_code=node.text.decode("utf-8"),
+                            test_macro=test_macro,
+                            test_suite=test_suite,
+                            test_parameter_expression=test_parameter_expression,
                         )
                         return entity
 
@@ -542,10 +555,14 @@ class EntityExtractor:
                         init_declarator_node = node.child_by_field_name("declarator")
                         if init_declarator_node:
                             identifier_node = init_declarator_node.child_by_field_name("declarator")
+                            value_node = init_declarator_node.child_by_field_name("value")
                             if identifier_node and identifier_node.type == "identifier":
                                 name = identifier_node.text.decode("utf-8")
                                 print(f'Constant name: {name}')
-                            
+                            if value_node:
+                                constant_value = value_node.text.decode("utf-8")
+                                print(f'Constant value: {constant_value}')
+                            if name and constant_value:
                                 kind = EntityKind.CONSTANT
                                 parts = []
                                 parts.extend(self.namespace_stack)
@@ -575,7 +592,8 @@ class EntityExtractor:
                                     end_line=node.end_point[0] + 1,
                                     signature=source_bytes[node.start_byte : identifier_node.end_byte].decode("utf-8"),
                                     documentation=None,
-                                    source_code=node.text.decode("utf-8")
+                                    source_code=node.text.decode("utf-8"),
+                                    constant_value=constant_value,
                                 )
                                 return entity
 
