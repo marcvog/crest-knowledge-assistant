@@ -2,8 +2,14 @@ name: Update submodule and extract semantic entities
 
 on:
   schedule:
-    - cron: "17 * * * *"
+    - cron: "17 3 * * *"
   workflow_dispatch:
+    inputs:
+      force_extraction:
+        description: Run extraction even if the submodule is unchanged
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -49,33 +55,39 @@ jobs:
             >> "$GITHUB_STEP_SUMMARY"
 
       - name: Create feature branch
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         run: |
           branch="automation/update-crestapi-${{ steps.submodule.outputs.sha }}"
           git switch -c "$branch"
           echo "FEATURE_BRANCH=$branch" >> "$GITHUB_ENV"
 
       - name: Set up Python
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
       - name: Install uv
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         uses: astral-sh/setup-uv@v6
 
       - name: Install dependencies
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         run: uv sync
 
       - name: Extract semantic entities
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         run: |
           uv run python src/crest_knowledge_assistant/extraction/semantic_entity_extractor.py
 
       - name: Commit extracted entities and submodule update
-        if: steps.submodule.outputs.changed == 'true'
+        if: steps.submodule.outputs.changed == 'true' ||
+            inputs.force_extraction == true
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
