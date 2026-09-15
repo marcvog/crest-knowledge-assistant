@@ -24,7 +24,7 @@ jobs:
 
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
         with:
           submodules: recursive
           fetch-depth: 0
@@ -34,17 +34,18 @@ jobs:
         run: |
           git submodule update --remote --checkout data/CrestApi
 
+          submodule_sha="$(git -C data/CrestApi rev-parse --short=12 HEAD)"
+          echo "sha=$submodule_sha" >> "$GITHUB_OUTPUT"
+
           if git diff --quiet -- data/CrestApi; then
             echo "changed=false" >> "$GITHUB_OUTPUT"
           else
             echo "changed=true" >> "$GITHUB_OUTPUT"
-
-            submodule_sha="$(git -C data/CrestApi rev-parse --short=12 HEAD)"
-            echo "sha=$submodule_sha" >> "$GITHUB_OUTPUT"
           fi
 
       - name: Report that submodule is up to date
-        if: steps.submodule.outputs.changed == 'false'
+        if: steps.submodule.outputs.changed == 'false' &&
+            !inputs.force_extraction
         run: |
           echo "The data/CrestApi submodule is already up to date."
           echo "No extraction or feature branch is required."
@@ -58,21 +59,21 @@ jobs:
         if: steps.submodule.outputs.changed == 'true' ||
             inputs.force_extraction == true
         run: |
-          branch="automation/update-crestapi-${{ steps.submodule.outputs.sha }}"
+          branch="automation/update-crestapi-${{ steps.submodule.outputs.sha }}-${GITHUB_RUN_ID}"
           git switch -c "$branch"
           echo "FEATURE_BRANCH=$branch" >> "$GITHUB_ENV"
 
       - name: Set up Python
         if: steps.submodule.outputs.changed == 'true' ||
             inputs.force_extraction == true
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v7
         with:
           python-version: "3.12"
 
       - name: Install uv
         if: steps.submodule.outputs.changed == 'true' ||
             inputs.force_extraction == true
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v10.1.0
 
       - name: Install dependencies
         if: steps.submodule.outputs.changed == 'true' ||
@@ -94,6 +95,7 @@ jobs:
 
           git add data/CrestApi
           git add index/
+          git add version/
 
           git commit -m "Update CrestApi and extract semantic entities"
           git push --set-upstream origin "$FEATURE_BRANCH"
