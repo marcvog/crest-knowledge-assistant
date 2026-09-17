@@ -26,8 +26,8 @@ uri = os.getenv("MILVUS_URI")
 token = os.getenv("MILVUS_KEY")
 collection = os.getenv("MILVUS_COLLECTION")
 
-uri = "db/milvus.db"
-token = None
+# uri = "db/milvus.db"
+# token = None
 
 
 class Indexer:

@@ -35,8 +35,8 @@ uri = _require_env("MILVUS_URI")
 token = _require_env("MILVUS_KEY")
 collection = _require_env("MILVUS_COLLECTION")
 
-uri = "db/milvus.db"
-token = None
+# uri = "db/milvus.db"
+# token = None
 
 llm_provider = os.getenv("LLM_PROVIDER", "openai")
 llm_model = os.getenv("LLM_MODEL", "gpt-5-mini")

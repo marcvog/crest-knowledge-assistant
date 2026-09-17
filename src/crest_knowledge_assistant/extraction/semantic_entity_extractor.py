@@ -324,8 +324,11 @@ class EntityExtractor:
                 )
             )
             # unique identifier
+            relative_source_file = path.relative_to(DATA_DIR)
             id=hashlib.sha256(
-                fully_qualified_name.encode("utf-8")
+                relative_source_file.as_posix().encode("utf-8")
+                + b"\0"
+                + fully_qualified_name.encode("utf-8")
                 + b"\0"
                 + source_bytes[node.start_byte : end.start_byte]
             ).hexdigest()
@@ -336,7 +339,7 @@ class EntityExtractor:
                 name=name,
                 qualified_name=fully_qualified_name,
                 namespace=self.extract_namespace(),
-                source_file=path,
+                source_file=path.relative_to(PROJECT_ROOT),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 signature=signature,
@@ -369,8 +372,11 @@ class EntityExtractor:
             print(f'Fully qualified class name: {fully_qualified_name}')
 
             # unique identifier
+            relative_source_file = path.relative_to(DATA_DIR)
             id=hashlib.sha256(
-                fully_qualified_name.encode("utf-8")
+                relative_source_file.as_posix().encode("utf-8")
+                + b"\0"
+                + fully_qualified_name.encode("utf-8")
                 + b"\0"
                 + source_bytes[node.start_byte : body.start_byte]
             ).hexdigest()
@@ -381,7 +387,7 @@ class EntityExtractor:
                 name=name,
                 qualified_name=fully_qualified_name,
                 namespace=self.extract_namespace(),
-                source_file=path,
+                source_file=path.relative_to(PROJECT_ROOT),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
@@ -411,8 +417,11 @@ class EntityExtractor:
             print(f'Fully qualified struct name: {fully_qualified_name}')
 
             # unique identifier
+            relative_source_file = path.relative_to(DATA_DIR)
             id=hashlib.sha256(
-                fully_qualified_name.encode("utf-8")
+                relative_source_file.as_posix().encode("utf-8")
+                + b"\0"
+                + fully_qualified_name.encode("utf-8")
                 + b"\0"
                 + source_bytes[node.start_byte : body.start_byte]
             ).hexdigest()
@@ -423,7 +432,7 @@ class EntityExtractor:
                 name=name,
                 qualified_name=fully_qualified_name,
                 namespace=self.extract_namespace(),
-                source_file=path,
+                source_file=path.relative_to(PROJECT_ROOT),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
@@ -468,7 +477,7 @@ class EntityExtractor:
                 name=name,
                 qualified_name=fully_qualified_name,
                 namespace=self.extract_namespace(),
-                source_file=path,
+                source_file=path.relative_to(PROJECT_ROOT),
                 start_line=node.start_point[0] + 1,
                 end_line=node.end_point[0] + 1,
                 signature=source_bytes[node.start_byte : body.start_byte].decode("utf-8"),
@@ -527,7 +536,7 @@ class EntityExtractor:
                             name=name,
                             qualified_name=fully_qualified_name,
                             namespace=self.extract_namespace(),
-                            source_file=path,
+                            source_file=path.relative_to(PROJECT_ROOT),
                             start_line=node.start_point[0] + 1,
                             end_line=node.end_point[0] + 1,
                             signature=source_bytes[node.start_byte : call_expression_node.end_byte].decode("utf-8"),
@@ -587,7 +596,7 @@ class EntityExtractor:
                                     name=name,
                                     qualified_name=fully_qualified_name,
                                     namespace=self.extract_namespace(),
-                                    source_file=path,
+                                    source_file=path.relative_to(PROJECT_ROOT),
                                     start_line=node.start_point[0] + 1,
                                     end_line=node.end_point[0] + 1,
                                     signature=source_bytes[node.start_byte : identifier_node.end_byte].decode("utf-8"),
