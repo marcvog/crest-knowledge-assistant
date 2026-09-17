@@ -1,20 +1,10 @@
-from openai import OpenAI
+from langchain_core.language_models.chat_models import BaseChatModel
 
 
-class Generator:
-    def __init__(self, model: str = "gpt-5-mini", temperature: float = 1.0):
-        self.client = OpenAI()
+class Generator:  
+    def __init__(self, model: BaseChatModel):
         self.model = model
-        self.temperature = temperature
 
-    def generate(
-        self,
-        messages: list[dict[str, str]],
-    ) -> str:
-        response = self.client.chat.completions.create(
-            model=self.model,
-            temperature=self.temperature,
-            messages=messages,
-        )
-
-        return response.choices[0].message.content or ""
+    def generate(self, messages: list[dict[str, str]]) -> str:
+        response = self.model.invoke(messages)
+        return str(response.content)

@@ -2,6 +2,7 @@ from crest_knowledge_assistant.indexing.vector_store import VectorStore, SearchH
 from crest_knowledge_assistant.indexing.embedder import Embedder
 from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT
 from crest_knowledge_assistant.rag.generator import Generator
+from crest_knowledge_assistant.rag.model_factory import create_chat_model
 import crest_knowledge_assistant.indexing.indexer as indexer
 
 import os
@@ -26,25 +27,33 @@ def _require_env(name: str) -> str:
 
     return value
 
-MILVUS_URI   = _require_env("MILVUS_URI")
-MILVUS_TOKEN = _require_env("MILVUS_KEY")
+embedding_provider = _require_env("EMBEDDING_PROVIDER")
+embedding_model = _require_env("EMBEDDING_MODEL")
+embedding_dimensions: int = int(_require_env("EMBEDDING_DIMENSIONS"))
 
-# MILVUS_URI = "db/milvus.db"
-# MILVUS_TOKEN = None
+uri = _require_env("MILVUS_URI")
+token = _require_env("MILVUS_KEY")
+collection = _require_env("MILVUS_COLLECTION")
 
-EMBED_MODEL     = indexer.EMBED_MODEL
-EMBED_DIM       = indexer.EMBED_DIM
-COLLECTION_NAME = indexer.COLLECTION
+uri = "db/milvus.db"
+token = None
 
-
+llm_provider = os.getenv("LLM_PROVIDER", "openai")
+llm_model = os.getenv("LLM_MODEL", "gpt-5-mini")
+    
 sys.path.append(PROJECT_ROOT)
+
+model = create_chat_model(
+    provider=llm_provider,
+    model=llm_model,
+)
 
 
 class RAGPipeline:
     def __init__(self):
-        self.generator = Generator()
-        self.embedder = Embedder(EMBED_MODEL, EMBED_DIM)
-        self.vector_store = VectorStore(MILVUS_URI, COLLECTION_NAME, EMBED_DIM, MILVUS_TOKEN)
+        self.generator = Generator(model=model)
+        self.embedder = Embedder(embedding_model, embedding_dimensions, provider=embedding_provider)
+        self.vector_store = VectorStore(uri, collection, embedding_dimensions, token)
 
 
     def retrieve(self, question: str, top_k: int = 5) -> list[SearchHit]:

@@ -16,22 +16,23 @@ from collections.abc import Callable
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-
-EMBED_MODEL = "text-embedding-3-small"
-EMBED_DIM   = 1536                          # dimension of text-embedding-3-small
-COLLECTION  = "crest_knowledge_base_v1"     # Milvus collection name
-
 load_dotenv()
+
+embedding_provider = os.getenv("EMBEDDING_PROVIDER")
+embedding_model = os.getenv("EMBEDDING_MODEL")
+embedding_dimensions: int = int(os.getenv("EMBEDDING_DIMENSIONS"))
+
 uri = os.getenv("MILVUS_URI")
 token = os.getenv("MILVUS_KEY")
+collection = os.getenv("MILVUS_COLLECTION")
 
-# uri = "db/milvus.db"
-# token = None
+uri = "db/milvus.db"
+token = None
 
 
 class Indexer:
-    def __init__(self, embed_model: str, embed_dim: int, collection: str):
-        self.embedder = Embedder(embed_model)
+    def __init__(self, embed_model: str, embed_dim: int, embed_provider: str, collection: str):
+        self.embedder = Embedder(embed_model, embed_dim, provider=embed_provider)
         self.index_store = IndexStore()
         self.vector_store = VectorStore(uri,collection,embed_dim,token)
 
@@ -80,8 +81,8 @@ class Indexer:
 
 def _cli():
     load_dotenv()
-    indexer=Indexer(EMBED_MODEL, EMBED_DIM, COLLECTION)
-    print(f"Indexing documents from '{DOCUMENT_DIR}' → collection '{COLLECTION}'...")
+    indexer=Indexer(embedding_model, embedding_dimensions, embedding_provider, collection)
+    print(f"Indexing documents from '{DOCUMENT_DIR}' → collection '{collection}'...")
     summary=indexer.build_index(on_progress=lambda step, completed, total:
         print(f"  {step}: {completed}/{total}")
     )
