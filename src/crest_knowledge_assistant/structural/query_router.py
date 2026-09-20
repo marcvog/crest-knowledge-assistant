@@ -9,10 +9,12 @@ class QueryIntent(Enum):
     FIND_METHOD = "find_method"
     FIND_FUNCTION = "find_function"
 
+
 @dataclass
 class StructuralQuery:
     intent: QueryIntent
     target: str | None
+
 
 @dataclass
 class RoutedQuery:
@@ -33,7 +35,7 @@ class QueryRouter:
         return RoutedQuery(
             pipeline="semantic",
         )
-    
+
     def parse_structural_query(self, question: str) -> StructuralQuery | None:
         question = question.strip()
 

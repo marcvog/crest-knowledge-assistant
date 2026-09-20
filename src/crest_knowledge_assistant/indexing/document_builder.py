@@ -1,11 +1,11 @@
-from crest_knowledge_assistant.models.index_document import IndexDocument
-from crest_knowledge_assistant.models.semantic_entity import SemanticEntity, EntityKind
-from crest_knowledge_assistant.models.index_version import IndexVersion
-from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT, INDEX_DIR, DOCUMENT_DIR, IndexStore
 from crest_knowledge_assistant.file_utils import get_file_paths
-
-from pathlib import Path
-import os
+from crest_knowledge_assistant.indexing.index_store import (
+    DOCUMENT_DIR,
+    INDEX_DIR,
+    IndexStore,
+)
+from crest_knowledge_assistant.models.index_document import IndexDocument
+from crest_knowledge_assistant.models.semantic_entity import SemanticEntity
 
 
 class DocumentBuilder:
@@ -50,7 +50,6 @@ class DocumentBuilder:
 
         return "\n".join(parts)
 
-
     def build_metadata(self, entity: SemanticEntity) -> dict[str, str]:
         return {
             "kind": entity.kind.value,
@@ -64,8 +63,7 @@ class DocumentBuilder:
             "test_suite": entity.test_suite or "",
         }
 
-
-    def clear (self) -> None:
+    def clear(self) -> None:
         self.semantic_entities.clear()
         self.index_documents.clear()
 

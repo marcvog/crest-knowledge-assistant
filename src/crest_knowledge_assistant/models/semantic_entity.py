@@ -1,10 +1,7 @@
-import os, sys
+from dataclasses import dataclass
 from enum import Enum
 from pathlib import Path
-import pathlib
 
-from dataclasses import dataclass
-from typing import Any
 
 class EntityKind(Enum):
     NAMESPACE = "namespace"
@@ -17,6 +14,7 @@ class EntityKind(Enum):
     TEST = "test"
     TEST_INSTANTIATION = "test_instantiation"
     CONSTANT = "constant"
+
 
 @dataclass
 class SemanticEntity:
@@ -35,29 +33,27 @@ class SemanticEntity:
     test_suite: str | None = None
     test_parameter_expression: str | None = None
     constant_value: str | None = None
-    
 
-
-    def to_dict (self) -> dict:
+    def to_dict(self) -> dict:
         dictionary = {
-                "id" : self.id,
-                "kind" : self.kind.value,
-                "name" : self.name,
-                "qualified_name" : self.qualified_name,
-                "namespace" : self.namespace,
-                "source_file" : str(self.source_file),
-                "start_line" : self.start_line,
-                "end_line" : self.end_line,
-                "signature" : self.signature,
-                "documentation" : self.documentation,
-                "source_code" : self.source_code,
-                "test_macro" : self.test_macro,
-                "test_suite" : self.test_suite,
-                "test_parameter_expression" : self.test_parameter_expression,
-                "constant_value" : self.constant_value,
+            "id": self.id,
+            "kind": self.kind.value,
+            "name": self.name,
+            "qualified_name": self.qualified_name,
+            "namespace": self.namespace,
+            "source_file": str(self.source_file),
+            "start_line": self.start_line,
+            "end_line": self.end_line,
+            "signature": self.signature,
+            "documentation": self.documentation,
+            "source_code": self.source_code,
+            "test_macro": self.test_macro,
+            "test_suite": self.test_suite,
+            "test_parameter_expression": self.test_parameter_expression,
+            "constant_value": self.constant_value,
         }
         return dictionary
-    
+
     @classmethod
     def from_dict(cls, data: dict) -> "SemanticEntity":
         entity = cls(

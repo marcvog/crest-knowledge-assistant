@@ -16,8 +16,14 @@ class Embedder:
         load_dotenv()
 
         self.provider = (
-            provider if provider is not None else os.getenv("EMBEDDING_PROVIDER", "openai")
-        ).strip().lower()
+            (
+                provider
+                if provider is not None
+                else os.getenv("EMBEDDING_PROVIDER", "openai")
+            )
+            .strip()
+            .lower()
+        )
         self.model = model if model is not None else os.getenv("EMBEDDING_MODEL")
         if self.model is None:
             if self.provider == "openai":
@@ -38,7 +44,9 @@ class Embedder:
         # Output-size configuration is provider/model-specific.
         options = {}
         if self.dimensions is not None:
-            if self.provider != "openai" or not self.model.startswith("text-embedding-3-"):
+            if self.provider != "openai" or not self.model.startswith(
+                "text-embedding-3-"
+            ):
                 raise ValueError(
                     "This adapter supports dimensions only for OpenAI text-embedding-3 models. "
                     "Omit EMBEDDING_DIMENSIONS for other providers/models."
@@ -55,9 +63,7 @@ class Embedder:
         """Embed a retrieval query."""
         return self.embeddings.embed_query(text)
 
-    def embed_texts(
-        self, texts: list[str], batch_size: int = 64
-    ) -> list[list[float]]:
+    def embed_texts(self, texts: list[str], batch_size: int = 64) -> list[list[float]]:
         """Embed documents in input order, using application-level batches."""
         if batch_size <= 0:
             raise ValueError("batch_size must be positive.")
@@ -65,6 +71,6 @@ class Embedder:
         vectors: list[list[float]] = []
         for start in range(0, len(texts), batch_size):
             vectors.extend(
-                self.embeddings.embed_documents(texts[start:start + batch_size])
+                self.embeddings.embed_documents(texts[start : start + batch_size])
             )
         return vectors

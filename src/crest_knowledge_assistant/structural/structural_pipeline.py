@@ -1,8 +1,12 @@
+from crest_knowledge_assistant.file_utils import get_file_paths
+from crest_knowledge_assistant.indexing.index_store import DOCUMENT_DIR, IndexStore
 from crest_knowledge_assistant.indexing.vector_store import SearchHit
 from crest_knowledge_assistant.models.index_document import IndexDocument
-from crest_knowledge_assistant.indexing.index_store import IndexStore, DOCUMENT_DIR
-from crest_knowledge_assistant.structural.query_router import QueryIntent, StructuralQuery
-from crest_knowledge_assistant.file_utils import get_file_paths
+from crest_knowledge_assistant.structural.query_router import (
+    QueryIntent,
+    StructuralQuery,
+)
+
 
 class StructPipeline:
     def __init__(self):
@@ -12,7 +16,7 @@ class StructPipeline:
 
         index_documents: list[IndexDocument] = []
         for path in get_file_paths(DOCUMENT_DIR):
-            self.index_store.document_path=path
+            self.index_store.document_path = path
             index_documents.extend(self.index_store.load_documents())
 
         if structural_query.intent == QueryIntent.LIST_METHODS:
@@ -51,7 +55,6 @@ class StructPipeline:
 
         return answer, hits
 
-
     def _list_methods(
         self,
         documents: list[IndexDocument],
@@ -78,7 +81,6 @@ class StructPipeline:
 
         return hits
 
-
     def _list_classes(
         self,
         documents: list[IndexDocument],
@@ -89,7 +91,6 @@ class StructPipeline:
             for document in documents
             if document.metadata["kind"] == "class"
         ]
-
 
     def _find_entity(
         self,
@@ -104,10 +105,8 @@ class StructPipeline:
         return [
             self._to_search_hit(document)
             for document in documents
-            if document.metadata["kind"] == kind
-            and document.metadata["name"] == target
+            if document.metadata["kind"] == kind and document.metadata["name"] == target
         ]
-
 
     def _to_search_hit(
         self,
@@ -122,7 +121,6 @@ class StructPipeline:
             metadata=document.metadata,
         )
 
-
     def _build_answer(
         self,
         structural_query: StructuralQuery,
@@ -130,22 +128,16 @@ class StructPipeline:
     ) -> str:
 
         if structural_query.intent == QueryIntent.LIST_METHODS:
-            lines = [
-                f"Methods found in {structural_query.target}:"
-            ]
+            lines = [f"Methods found in {structural_query.target}:"]
 
         elif structural_query.intent == QueryIntent.LIST_CLASSES:
             lines = ["Classes found:"]
 
         elif structural_query.intent == QueryIntent.FIND_METHOD:
-            lines = [
-                f"Method '{structural_query.target}' found:"
-            ]
+            lines = [f"Method '{structural_query.target}' found:"]
 
         elif structural_query.intent == QueryIntent.FIND_FUNCTION:
-            lines = [
-                f"Function '{structural_query.target}' found:"
-            ]
+            lines = [f"Function '{structural_query.target}' found:"]
 
         else:
             return ""

@@ -1,5 +1,6 @@
 from pathlib import Path
 
+
 def get_file_paths(folder: Path) -> list[Path]:
     file_paths: list[Path] = []
 

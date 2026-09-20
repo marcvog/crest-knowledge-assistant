@@ -39,6 +39,32 @@ The system consists of an offline indexing and ingestion pipeline and an online 
 * Docker
 * GitHub Actions
 
+## Python code quality
+
+Install development dependencies with `uv sync --locked`. Run the same Ruff
+checks used by GitHub Actions before submitting changes:
+
+```bash
+uv run ruff check .
+uv run ruff format --check .
+```
+
+To apply safe lint fixes (including import sorting) and format the code:
+
+```bash
+uv run ruff check --fix .
+uv run ruff format .
+```
+
+Ruff targets Python 3.12 and checks project code, excluding external source data
+and generated documents, indexes, and version metadata. Configuration lives in
+`pyproject.toml`; the tool version is recorded in `uv.lock`. The Ruff workflow
+runs on pull requests and pushes to `main`.
+
+For feedback while editing in VS Code, install the **Ruff** extension
+(`charliermarsh.ruff`) and select Ruff as the Python formatter. Enable format on
+save if desired.
+
 ## Setup and Usage
 
 Run the following commands from the project root in the order shown.

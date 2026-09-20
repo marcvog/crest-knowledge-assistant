@@ -1,6 +1,7 @@
-from pymilvus import MilvusClient, DataType
-from typing import Any
 from dataclasses import dataclass
+from typing import Any
+
+from pymilvus import DataType, MilvusClient
 
 from crest_knowledge_assistant.models.index_document import IndexDocument
 
@@ -36,7 +37,6 @@ class VectorStore:
         self.vector_dimension = vector_dimension
 
         self._ensure_collection()
-
 
     def _ensure_collection(self) -> None:
 
@@ -142,7 +142,6 @@ class VectorStore:
         self.client.load_collection(self.collection_name)
         return
 
-
     def reset_collection(self) -> None:
         """Delete all indexed vectors by dropping and recreating the collection.
 
@@ -153,7 +152,6 @@ class VectorStore:
         if self.client.has_collection(self.collection_name):
             self.client.drop_collection(self.collection_name)
         self._ensure_collection()
-
 
     def collection_stats(self) -> dict[str, int]:
         if not self.client.has_collection(self.collection_name):
@@ -172,10 +170,10 @@ class VectorStore:
 
     @classmethod
     def build_record(
-            cls,
-            document: IndexDocument,
-            vector: list[float],
-        ) -> dict[str, Any]:
+        cls,
+        document: IndexDocument,
+        vector: list[float],
+    ) -> dict[str, Any]:
 
         return {
             "fragment_id": document.fragment_id,
@@ -184,7 +182,6 @@ class VectorStore:
             "text": document.text,
             **document.metadata,
         }
-
 
     def insert(self, records: list[dict[str, Any]]) -> int:
         if not records:
@@ -197,12 +194,10 @@ class VectorStore:
 
         return len(records)
 
-
     def flush(self) -> None:
         self.client.flush(
             collection_name=self.collection_name,
         )
-
 
     def search(
         self,
@@ -259,7 +254,4 @@ class VectorStore:
                 )
             )
 
-        return hits   
-
-    
-        
+        return hits

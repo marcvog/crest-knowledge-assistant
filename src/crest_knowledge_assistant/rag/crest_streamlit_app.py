@@ -4,19 +4,19 @@ Run from the project root with:
     streamlit run path/to/crest_streamlit_app.py
 """
 
-import streamlit as st
+import hmac
+import os
 import re
+
+import streamlit as st
+from dotenv import load_dotenv
 
 from crest_knowledge_assistant.rag.rag_pipeline import RAGPipeline
 from crest_knowledge_assistant.structural.query_router import QueryRouter
 from crest_knowledge_assistant.structural.structural_pipeline import StructPipeline
-from dotenv import load_dotenv
-
-import os
-import hmac
-import streamlit as st
 
 load_dotenv()  # Load environment variables from .env file
+
 
 def check_password() -> None:
     expected_password = os.getenv("APP_PASSWORD")
@@ -50,28 +50,34 @@ check_password()
 
 MAX_HISTORY_TURNS = 3
 
+
 def clean_history_message(text: str) -> str:
     return re.sub(r"\[\d+\]", "", text).strip()
+
 
 st.set_page_config(
     page_title="CREST Knowledge Assistant",
     page_icon="💬",
 )
 
+
 @st.cache_resource
 def get_rag_pipeline() -> RAGPipeline:
     """Create the RAG pipeline once and reuse it across Streamlit reruns."""
     return RAGPipeline()
+
 
 @st.cache_resource
 def get_struct_pipeline() -> StructPipeline:
     """Create the structural pipeline once and reuse it across Streamlit reruns."""
     return StructPipeline()
 
+
 @st.cache_resource
 def get_query_router() -> QueryRouter:
     """Create the query router once and reuse it across Streamlit reruns."""
     return QueryRouter()
+
 
 if "messages" not in st.session_state:
     st.session_state.messages = []
@@ -103,9 +109,7 @@ for message in st.session_state.messages:
         st.markdown(message["content"])
 
 if question := st.chat_input("Ask a question about CREST..."):
-    st.session_state.messages.append(
-        {"role": "user", "content": question}
-    )
+    st.session_state.messages.append({"role": "user", "content": question})
 
     with st.chat_message("user"):
         st.markdown(question)
@@ -118,19 +122,21 @@ if question := st.chat_input("Ask a question about CREST..."):
                 if routed_query.pipeline == "structural":
                     answer, hits = get_struct_pipeline().answer(
                         routed_query.structural_query
-                        )
+                    )
                     if not hits:
                         actual_route = "semantic"
                         answer, hits = get_rag_pipeline().answer(
                             question,
                             top_k=top_k,
-                            history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS:]
+                            history=st.session_state.rag_history[
+                                -2 * MAX_HISTORY_TURNS :
+                            ],
                         )
                 else:
                     answer, hits = get_rag_pipeline().answer(
                         question,
                         top_k=top_k,
-                        history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS:]
+                        history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS :],
                     )
             except Exception as exc:
                 st.error(f"The assistant could not answer: {exc}")
@@ -141,14 +147,19 @@ if question := st.chat_input("Ask a question about CREST..."):
                     {"role": "assistant", "content": answer}
                 )
                 if actual_route == "semantic":
-                    st.session_state.rag_history.extend([
-                        {"role": "user", "content": question},
-                        {"role": "assistant", "content": clean_history_message(answer)},
-                    ])
+                    st.session_state.rag_history.extend(
+                        [
+                            {"role": "user", "content": question},
+                            {
+                                "role": "assistant",
+                                "content": clean_history_message(answer),
+                            },
+                        ]
+                    )
                 st.caption(f"Route: {actual_route}")
                 with st.expander("Retrieved documents"):
                     for i, hit in enumerate(hits, start=1):
                         st.markdown(
                             f"**{i}. {hit.metadata['qualified_name']}** "
                             f"— similarity `{hit.score:.4f}`"
-        )
+                        )

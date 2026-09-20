@@ -1,10 +1,9 @@
-from crest_knowledge_assistant.models.semantic_entity import SemanticEntity
-from crest_knowledge_assistant.models.index_version import IndexVersion
-from crest_knowledge_assistant.models.index_document import IndexDocument
-
-import os
 import json
 from pathlib import Path
+
+from crest_knowledge_assistant.models.index_document import IndexDocument
+from crest_knowledge_assistant.models.index_version import IndexVersion
+from crest_knowledge_assistant.models.semantic_entity import SemanticEntity
 
 path = Path(__file__).resolve()
 while not (path / "pyproject.toml").exists():
@@ -20,8 +19,11 @@ VERSION_STORE = VERSION_DIR / "index_versions.json"
 ENTITY_STORE = INDEX_DIR / "semantic_entities.jsonl"
 DOCUMENT_STORE = DOCUMENT_DIR / "index_documents.json"
 
+
 class IndexStore:
-    def __init__(self, entity_path: Path = ENTITY_STORE, document_path: Path = DOCUMENT_STORE):
+    def __init__(
+        self, entity_path: Path = ENTITY_STORE, document_path: Path = DOCUMENT_STORE
+    ):
         self.entity_path = entity_path
         self.document_path = document_path
 

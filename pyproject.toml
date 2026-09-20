@@ -28,4 +28,15 @@ packages = ["src/crest_knowledge_assistant"]
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+    "ruff>=0.16.8",
 ]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 88
+extend-exclude = ["data", "documents", "index", "version"]
+force-exclude = true
+
+[tool.ruff.lint]
+# Ruff's baseline error checks, plus import sorting.
+select = ["E4", "E7", "E9", "F", "I"]

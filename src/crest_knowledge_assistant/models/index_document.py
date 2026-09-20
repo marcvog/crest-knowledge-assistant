@@ -13,7 +13,7 @@ class IndexDocument:
             "fragment_id": self.fragment_id,
             "entity_id": self.entity_id,
             "text": self.text,
-            "metadata": self.metadata
+            "metadata": self.metadata,
         }
         return dictionary
 
@@ -23,6 +23,6 @@ class IndexDocument:
             fragment_id=data["fragment_id"],
             entity_id=data["entity_id"],
             text=data["text"],
-            metadata=data["metadata"]
+            metadata=data["metadata"],
         )
         return document

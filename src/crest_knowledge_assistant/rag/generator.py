@@ -1,7 +1,7 @@
 from langchain_core.language_models.chat_models import BaseChatModel
 
 
-class Generator:  
+class Generator:
     def __init__(self, model: BaseChatModel):
         self.model = model
 
