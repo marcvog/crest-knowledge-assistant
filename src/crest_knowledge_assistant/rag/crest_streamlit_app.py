@@ -114,52 +114,50 @@ if question := st.chat_input("Ask a question about CREST..."):
     with st.chat_message("user"):
         st.markdown(question)
 
-    with st.chat_message("assistant"):
-        with st.spinner("Searching CREST and preparing an answer..."):
-            try:
-                routed_query = get_query_router().route(question)
-                actual_route = routed_query.pipeline
-                if routed_query.pipeline == "structural":
-                    answer, hits = get_struct_pipeline().answer(
-                        routed_query.structural_query
-                    )
-                    if not hits:
-                        actual_route = "semantic"
-                        answer, hits = get_rag_pipeline().answer(
-                            question,
-                            top_k=top_k,
-                            history=st.session_state.rag_history[
-                                -2 * MAX_HISTORY_TURNS :
-                            ],
-                        )
-                else:
+    with (
+        st.chat_message("assistant"),
+        st.spinner("Searching CREST and preparing an answer..."),
+    ):
+        try:
+            routed_query = get_query_router().route(question)
+            actual_route = routed_query.pipeline
+            if routed_query.pipeline == "structural":
+                answer, hits = get_struct_pipeline().answer(
+                    routed_query.structural_query
+                )
+                if not hits:
+                    actual_route = "semantic"
                     answer, hits = get_rag_pipeline().answer(
                         question,
                         top_k=top_k,
                         history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS :],
                     )
-            except Exception as exc:
-                st.error(f"The assistant could not answer: {exc}")
             else:
-                st.markdown(answer)
-                st.session_state.last_hits = hits
-                st.session_state.messages.append(
-                    {"role": "assistant", "content": answer}
+                answer, hits = get_rag_pipeline().answer(
+                    question,
+                    top_k=top_k,
+                    history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS :],
                 )
-                if actual_route == "semantic":
-                    st.session_state.rag_history.extend(
-                        [
-                            {"role": "user", "content": question},
-                            {
-                                "role": "assistant",
-                                "content": clean_history_message(answer),
-                            },
-                        ]
+        except Exception as exc:
+            st.error(f"The assistant could not answer: {exc}")
+        else:
+            st.markdown(answer)
+            st.session_state.last_hits = hits
+            st.session_state.messages.append({"role": "assistant", "content": answer})
+            if actual_route == "semantic":
+                st.session_state.rag_history.extend(
+                    [
+                        {"role": "user", "content": question},
+                        {
+                            "role": "assistant",
+                            "content": clean_history_message(answer),
+                        },
+                    ]
+                )
+            st.caption(f"Route: {actual_route}")
+            with st.expander("Retrieved documents"):
+                for i, hit in enumerate(hits, start=1):
+                    st.markdown(
+                        f"**{i}. {hit.metadata['qualified_name']}** "
+                        f"— similarity `{hit.score:.4f}`"
                     )
-                st.caption(f"Route: {actual_route}")
-                with st.expander("Retrieved documents"):
-                    for i, hit in enumerate(hits, start=1):
-                        st.markdown(
-                            f"**{i}. {hit.metadata['qualified_name']}** "
-                            f"— similarity `{hit.score:.4f}`"
-                        )

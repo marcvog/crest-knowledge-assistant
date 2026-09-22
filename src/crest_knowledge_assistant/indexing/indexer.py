@@ -65,7 +65,7 @@ class Indexer:
 
             records = [
                 self.vector_store.build_record(doc, vec)
-                for doc, vec in zip(index_documents, vectors)
+                for doc, vec in zip(index_documents, vectors, strict=True)
             ]
             # print(f"records: {records}")
 

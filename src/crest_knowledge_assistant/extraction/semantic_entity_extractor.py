@@ -294,22 +294,8 @@ class EntityExtractor:
                 fully_qualified_name = "::".join(parts)
                 print(f"Fully qualified name: {fully_qualified_name}")
 
-            elif identifier_node.type == "operator_name":  # operator overload
-                if len(self.class_stack) > 0 or len(self.struct_stack) > 0:
-                    kind = EntityKind.METHOD
-                else:
-                    kind = EntityKind.FUNCTION
-                name = identifier_node.text.decode()
-                parts = []
-                parts.extend(self.namespace_stack)
-                parts.extend(self.class_stack)
-                parts.extend(self.struct_stack)
-                if name:
-                    parts.append(name)
-                fully_qualified_name = "::".join(parts)
-                print(f"Fully qualified name: {fully_qualified_name}")
-
-            elif identifier_node.type == "destructor_name":  # inline destructor
+            # operator overload and inline destructor
+            elif identifier_node.type in {"operator_name", "destructor_name"}:
                 if len(self.class_stack) > 0 or len(self.struct_stack) > 0:
                     kind = EntityKind.METHOD
                 else:
@@ -592,66 +578,63 @@ class EntityExtractor:
 
         source_bytes = path.read_bytes()
 
-        if node.type == "declaration":
-            if not contains_node_type(node, "function_declarator"):
-                type_qualifier_node = first_child_of_type(node, "type_qualifier")
-                if type_qualifier_node:
-                    type = type_qualifier_node.text.decode("utf-8")
-                    if type == "const" or type == "constexpr":
-                        init_declarator_node = node.child_by_field_name("declarator")
-                        if init_declarator_node:
-                            identifier_node = init_declarator_node.child_by_field_name(
-                                "declarator"
-                            )
-                            value_node = init_declarator_node.child_by_field_name(
-                                "value"
-                            )
-                            if identifier_node and identifier_node.type == "identifier":
-                                name = identifier_node.text.decode("utf-8")
-                                print(f"Constant name: {name}")
-                            if value_node:
-                                constant_value = value_node.text.decode("utf-8")
-                                print(f"Constant value: {constant_value}")
-                            if name and constant_value:
-                                kind = EntityKind.CONSTANT
-                                parts = []
-                                parts.extend(self.namespace_stack)
-                                parts.extend(self.class_stack)
-                                parts.append(name)
-                                fully_qualified_name = "::".join(parts)
-                                print(
-                                    f"Fully qualified enum name: {fully_qualified_name}"
-                                )
+        if node.type == "declaration" and not contains_node_type(
+            node, "function_declarator"
+        ):
+            type_qualifier_node = first_child_of_type(node, "type_qualifier")
+            if type_qualifier_node:
+                type = type_qualifier_node.text.decode("utf-8")
+                if type == "const" or type == "constexpr":
+                    init_declarator_node = node.child_by_field_name("declarator")
+                    if init_declarator_node:
+                        identifier_node = init_declarator_node.child_by_field_name(
+                            "declarator"
+                        )
+                        value_node = init_declarator_node.child_by_field_name("value")
+                        if identifier_node and identifier_node.type == "identifier":
+                            name = identifier_node.text.decode("utf-8")
+                            print(f"Constant name: {name}")
+                        if value_node:
+                            constant_value = value_node.text.decode("utf-8")
+                            print(f"Constant value: {constant_value}")
+                        if name and constant_value:
+                            kind = EntityKind.CONSTANT
+                            parts = []
+                            parts.extend(self.namespace_stack)
+                            parts.extend(self.class_stack)
+                            parts.append(name)
+                            fully_qualified_name = "::".join(parts)
+                            print(f"Fully qualified enum name: {fully_qualified_name}")
 
-                                # unique identifier
-                                relative_source_file = path.relative_to(DATA_DIR)
-                                id = hashlib.sha256(
-                                    relative_source_file.as_posix().encode("utf-8")
-                                    + b"\0"
-                                    + fully_qualified_name.encode("utf-8")
-                                    + b"\0"
-                                    + source_bytes[
-                                        node.start_byte : identifier_node.end_byte
-                                    ]
-                                ).hexdigest()
+                            # unique identifier
+                            relative_source_file = path.relative_to(DATA_DIR)
+                            id = hashlib.sha256(
+                                relative_source_file.as_posix().encode("utf-8")
+                                + b"\0"
+                                + fully_qualified_name.encode("utf-8")
+                                + b"\0"
+                                + source_bytes[
+                                    node.start_byte : identifier_node.end_byte
+                                ]
+                            ).hexdigest()
 
-                                entity = SemanticEntity(
-                                    id=id,
-                                    kind=kind,
-                                    name=name,
-                                    qualified_name=fully_qualified_name,
-                                    namespace=self.extract_namespace(),
-                                    source_file=path.relative_to(PROJECT_ROOT),
-                                    start_line=node.start_point[0] + 1,
-                                    end_line=node.end_point[0] + 1,
-                                    signature=source_bytes[
-                                        node.start_byte : identifier_node.end_byte
-                                    ].decode("utf-8"),
-                                    documentation=None,
-                                    source_code=node.text.decode("utf-8"),
-                                    constant_value=constant_value,
-                                )
-                                return entity
+                            entity = SemanticEntity(
+                                id=id,
+                                kind=kind,
+                                name=name,
+                                qualified_name=fully_qualified_name,
+                                namespace=self.extract_namespace(),
+                                source_file=path.relative_to(PROJECT_ROOT),
+                                start_line=node.start_point[0] + 1,
+                                end_line=node.end_point[0] + 1,
+                                signature=source_bytes[
+                                    node.start_byte : identifier_node.end_byte
+                                ].decode("utf-8"),
+                                documentation=None,
+                                source_code=node.text.decode("utf-8"),
+                                constant_value=constant_value,
+                            )
+                            return entity
 
         return None
 
