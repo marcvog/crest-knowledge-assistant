@@ -215,7 +215,7 @@ class EntityExtractor:
             return entity
 
         return None
-    
+
     # Handles distinct C++ declarator forms in one place.
     def process_function_node(self, node, path):  # noqa: C901
 
