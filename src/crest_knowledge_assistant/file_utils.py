@@ -7,7 +7,6 @@ def get_file_paths(folder: Path) -> list[Path]:
     for dirpath, dirnames, filenames in folder.walk():
         dirnames[:] = [d for d in dirnames if d != ".git"]
 
-        for filename in filenames:
-            file_paths.append(dirpath / filename)
+        file_paths.extend(dirpath / filename for filename in filenames)
 
     return file_paths

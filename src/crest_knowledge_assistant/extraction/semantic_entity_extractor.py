@@ -215,8 +215,9 @@ class EntityExtractor:
             return entity
 
         return None
-
-    def process_function_node(self, node, path):
+    
+    # Handles distinct C++ declarator forms in one place.
+    def process_function_node(self, node, path):  # noqa: C901
 
         source_bytes = path.read_bytes()
 
@@ -638,7 +639,7 @@ class EntityExtractor:
 
         return None
 
-    def walk(self, node, level=0):
+    def walk(self, node, level=0):  # noqa: C901
 
         entity = None
         print("  " * level + node.type)
