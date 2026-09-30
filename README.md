@@ -98,3 +98,32 @@ After the offline pipeline has completed, start the Streamlit chat interface:
 ```bash
 uv run streamlit run src/crest_knowledge_assistant/rag/crest_streamlit_app.py
 ```
+
+
+## Type checking and tests
+
+Install the locked development and application dependencies with `uv sync --locked`.
+
+```bash
+uv run mypy
+uv run pytest
+```
+
+Mypy initially checks models, file utilities, query routing, document building,
+index storage, and embeddings. Its scope is listed in `[tool.mypy].files` in
+`pyproject.toml`; extraction, vector storage, and the UI/RAG pipelines are not yet
+fully type-checked. Functions in the selected modules must have annotations,
+and untyped function bodies are checked. This is an incremental baseline, not
+strict checking of the entire application.
+
+The default tests run offline, with embedding clients replaced by test doubles
+and extraction/storage fixtures in temporary directories. They do not require
+the CrestApi submodule, API credentials, or a running database. GitHub Actions
+runs mypy and these tests on pull requests and pushes to `main`.
+
+The original live embedding test is kept separately and skipped by default.
+To run it intentionally with provider credentials configured (may incur API costs):
+
+```bash
+uv run pytest --run-integration -m integration tests/integration
+```

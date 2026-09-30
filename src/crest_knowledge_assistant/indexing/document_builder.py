@@ -9,7 +9,7 @@ from crest_knowledge_assistant.models.semantic_entity import SemanticEntity
 
 
 class DocumentBuilder:
-    def __init__(self):
+    def __init__(self) -> None:
         self.semantic_entities: list[SemanticEntity] = []
         self.index_documents: list[IndexDocument] = []
         self.store = IndexStore()
@@ -50,7 +50,7 @@ class DocumentBuilder:
 
         return "\n".join(parts)
 
-    def build_metadata(self, entity: SemanticEntity) -> dict[str, str]:
+    def build_metadata(self, entity: SemanticEntity) -> dict[str, str | int]:
         return {
             "kind": entity.kind.value,
             "name": entity.name,
@@ -68,7 +68,7 @@ class DocumentBuilder:
         self.index_documents.clear()
 
 
-def main():
+def main() -> None:
 
     builder = DocumentBuilder()
     file_paths = get_file_paths(INDEX_DIR)

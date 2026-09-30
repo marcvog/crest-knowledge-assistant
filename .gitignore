@@ -29,3 +29,5 @@ db/
 # Streamlit
 .agents
 
+
+.mypy_cache/

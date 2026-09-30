@@ -12,7 +12,7 @@ class Embedder:
         dimensions: int | None = None,
         *,
         provider: str | None = None,
-    ):
+    ) -> None:
         load_dotenv()
 
         self.provider = (

@@ -1,0 +1,25 @@
+name: Python quality
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  python-quality:
+    name: Types and offline tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: astral-sh/setup-uv@v10.1.0
+      - name: Install dependencies
+        run: uv sync --locked --python 3.12
+      - name: Check types
+        run: uv run --no-sync mypy
+      - name: Run offline tests
+        if: ${{ !cancelled() }}
+        run: uv run --no-sync pytest

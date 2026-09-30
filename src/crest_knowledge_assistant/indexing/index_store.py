@@ -23,7 +23,7 @@ DOCUMENT_STORE = DOCUMENT_DIR / "index_documents.json"
 class IndexStore:
     def __init__(
         self, entity_path: Path = ENTITY_STORE, document_path: Path = DOCUMENT_STORE
-    ):
+    ) -> None:
         self.entity_path = entity_path
         self.document_path = document_path
 
