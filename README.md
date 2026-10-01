@@ -127,3 +127,34 @@ To run it intentionally with provider credentials configured (may incur API cost
 ```bash
 uv run pytest --run-integration -m integration tests/integration
 ```
+
+## Local commit checks
+
+After cloning the repository, install the development dependencies and activate
+Git's pre-commit hook in that checkout:
+
+```bash
+uv sync --locked
+uv run pre-commit install
+```
+
+On each commit, the hooks check staged files: Ruff applies safe lint fixes and
+formats Python code, whitespace hooks remove trailing spaces and ensure a final
+newline, and YAML/TOML hooks validate syntax. Markdown hard line breaks are
+preserved. External source data and generated documents, indexes, and version
+metadata are excluded.
+
+Run the hooks on all tracked files manually with:
+
+```bash
+uv run pre-commit run --all-files
+```
+
+If a hook changes files, review the changes, stage them again, and retry the
+commit. Each developer must run the install command in their own checkout;
+committing the configuration does not activate hooks elsewhere. The first run
+requires network access to install the isolated hook environments.
+
+Keep the Ruff `rev` in `.pre-commit-config.yaml` aligned with the version in
+`uv.lock` when upgrading Ruff. Mypy and pytest remain separate local commands
+and CI checks; the existing GitHub checks still run even if local hooks are skipped.
