@@ -158,3 +158,8 @@ requires network access to install the isolated hook environments.
 Keep the Ruff `rev` in `.pre-commit-config.yaml` aligned with the version in
 `uv.lock` when upgrading Ruff. Mypy and pytest remain separate local commands
 and CI checks; the existing GitHub checks still run even if local hooks are skipped.
+
+## Performance analysis
+
+See [Scalene profiling and pandas analysis](performance/README.md) for the optional
+performance dependency group, extraction workload, and report commands.

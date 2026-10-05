@@ -31,3 +31,6 @@ db/
 
 
 .mypy_cache/
+
+# Local performance artifacts
+performance/results/

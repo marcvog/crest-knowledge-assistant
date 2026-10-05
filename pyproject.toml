@@ -32,6 +32,11 @@ dev = [
     "pytest>=9.1.1",
     "ruff>=0.16.8",
 ]
+performance = [
+    "matplotlib>=3.11.2",
+    "pandas>=3.0.5",
+    "scalene>=2.3.0",
+]
 
 [tool.ruff]
 target-version = "py312"
