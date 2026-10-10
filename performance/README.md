@@ -78,3 +78,57 @@ uv run --group performance pytest -q
 
 Generated results are ignored by Git. Profiling is an explicit local operation;
 normal application startup, commit hooks, and CI do not launch Scalene.
+
+## Repeatable timings with pytest-benchmark
+
+The performance group also includes pytest-benchmark. The three offline
+benchmarks in `performance/benchmarks/` measure parsing, extraction, and document
+building. They are outside the default `tests/` discovery path, so ordinary
+`uv run pytest` does not run benchmarks. Run them explicitly:
+
+```bash
+mkdir -p performance/results/benchmark-baseline
+uv run --group performance pytest performance/benchmarks -q \
+  --benchmark-json=performance/results/benchmark-baseline/benchmark.json \
+  --benchmark-save=baseline --benchmark-save-data
+```
+
+The plugin calibrates iterations and repeats operations. Assertions check the
+final result outside the timed operation. Each extraction creates fresh state;
+file reads are included and are generally cached by the OS. Parser creation is
+outside timing. Document building uses already extracted entities. No database,
+LLM, network calls, or index writes are part of these workloads.
+
+The JSON includes summary statistics and timing samples, machine and commit
+information, and custom fixture hash, size, and timed-scope descriptions.
+Durations in JSON are seconds even if the console displays microseconds.
+The fixture is small: results are a starting baseline, not production throughput.
+Run without Scalene, coverage, or parallel pytest workers for comparable timings.
+
+Saved comparison baselines live in `.benchmarks/` (ignored by Git). To compare
+with the latest saved run on the same environment:
+
+```bash
+uv run --group performance pytest performance/benchmarks -q --benchmark-compare
+```
+
+Keep inputs, dependencies, Python, machine, and load comparable. No performance
+failure threshold is imposed initially; shared runners introduce timing noise.
+
+Load the exported summary into pandas (separate from the Scalene loader):
+
+```python
+import json
+from pathlib import Path
+import pandas as pd
+
+report = json.loads(
+    Path("performance/results/benchmark-baseline/benchmark.json").read_text()
+)
+benchmarks = pd.json_normalize(report["benchmarks"])
+print(benchmarks[["name", "stats.median", "stats.mean", "stats.stddev"]])
+```
+
+A manually triggered **Performance benchmarks** GitHub workflow runs these
+benchmarks and uploads JSON for later analysis. It does not gate pull requests
+on timing thresholds.

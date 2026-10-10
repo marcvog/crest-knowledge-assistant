@@ -34,3 +34,5 @@ db/
 
 # Local performance artifacts
 performance/results/
+
+.benchmarks/
