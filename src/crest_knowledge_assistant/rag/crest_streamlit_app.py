@@ -10,12 +10,14 @@ import re
 
 import streamlit as st
 from dotenv import load_dotenv
+from langfuse import get_client
 
 from crest_knowledge_assistant.rag.rag_pipeline import RAGPipeline
 from crest_knowledge_assistant.structural.query_router import QueryRouter
 from crest_knowledge_assistant.structural.structural_pipeline import StructPipeline
 
 load_dotenv()  # Load environment variables from .env file
+langfuse = get_client()
 
 
 def check_password() -> None:
@@ -119,31 +121,47 @@ if question := st.chat_input("Ask a question about CREST..."):
         st.spinner("Searching CREST and preparing an answer..."),
     ):
         try:
-            routed_query = get_query_router().route(question)
-            actual_route = routed_query.pipeline
-            if routed_query.pipeline == "structural":
-                answer, hits = get_struct_pipeline().answer(
-                    routed_query.structural_query
-                )
-                if not hits:
-                    actual_route = "semantic"
+            with langfuse.start_as_current_observation(
+                as_type="span",
+                name="crest-query",
+                input={"question": question},
+            ) as trace:
+                routed_query = get_query_router().route(question)
+                actual_route = routed_query.pipeline
+
+                if routed_query.pipeline == "structural":
+                    answer, hits = get_struct_pipeline().answer(
+                        routed_query.structural_query
+                    )
+
+                    if not hits:
+                        actual_route = "semantic"
+                        answer, hits = get_rag_pipeline().answer(
+                            question,
+                            top_k=top_k,
+                            history=st.session_state.rag_history[
+                                -2 * MAX_HISTORY_TURNS :
+                            ],
+                        )
+                else:
                     answer, hits = get_rag_pipeline().answer(
                         question,
                         top_k=top_k,
                         history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS :],
                     )
-            else:
-                answer, hits = get_rag_pipeline().answer(
-                    question,
-                    top_k=top_k,
-                    history=st.session_state.rag_history[-2 * MAX_HISTORY_TURNS :],
+
+                trace.update(
+                    output={"answer": answer},
                 )
+
         except Exception as exc:
             st.error(f"The assistant could not answer: {exc}")
+
         else:
             st.markdown(answer)
             st.session_state.last_hits = hits
             st.session_state.messages.append({"role": "assistant", "content": answer})
+
             if actual_route == "semantic":
                 st.session_state.rag_history.extend(
                     [
@@ -154,7 +172,9 @@ if question := st.chat_input("Ask a question about CREST..."):
                         },
                     ]
                 )
+
             st.caption(f"Route: {actual_route}")
+
             with st.expander("Retrieved documents"):
                 for i, hit in enumerate(hits, start=1):
                     st.markdown(

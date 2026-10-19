@@ -11,6 +11,7 @@ dependencies = [
     "langchain-anthropic>=1.7.2",
     "langchain-openai>=1.6.2",
     "langchain-openrouter>=0.2.8",
+    "langfuse>=5.0.2",
     "openai>=2.53.0",
     "pymilvus[milvus-lite]>=3.0.1",
     "streamlit>=1.62.0",
