@@ -126,7 +126,17 @@ if question := st.chat_input("Ask a question about CREST..."):
                 name="crest-query",
                 input={"question": question},
             ) as trace:
-                routed_query = get_query_router().route(question)
+                with langfuse.start_as_current_observation(
+                    as_type="span",
+                    name="query-routing",
+                    input={"question": question},
+                ) as routing_span:
+                    routed_query = get_query_router().route(question)
+
+                    routing_span.update(
+                        output={"selected_pipeline": routed_query.pipeline},
+                    )
+
                 actual_route = routed_query.pipeline
 
                 if routed_query.pipeline == "structural":
