@@ -2,6 +2,7 @@ import os
 import sys
 
 from dotenv import load_dotenv
+from langfuse import get_client
 
 from crest_knowledge_assistant.indexing.embedder import Embedder
 from crest_knowledge_assistant.indexing.index_store import PROJECT_ROOT
@@ -10,6 +11,7 @@ from crest_knowledge_assistant.rag.generator import Generator
 from crest_knowledge_assistant.rag.model_factory import create_chat_model
 
 load_dotenv()
+langfuse = get_client()
 
 
 def _require_env(name: str) -> str:
@@ -105,7 +107,28 @@ class RAGPipeline:
         top_k: int = 5,
         history: list[dict[str, str]] | None = None,
     ) -> tuple[str, list[SearchHit]]:
-        hits = self.retrieve(question, top_k)
+
+        with langfuse.start_as_current_observation(
+            as_type="span",
+            name="semantic-retrieval",
+            input={"question": question, "top_k": top_k},
+        ) as retrieval_span:
+            hits = self.retrieve(question, top_k)
+
+            retrieval_span.update(
+                output={
+                    "hit_count": len(hits),
+                    "retrieved_entities": [
+                        {
+                            "name": hit.metadata["qualified_name"],
+                            "source_file": hit.metadata["source_file"],
+                            "score": hit.score,
+                        }
+                        for hit in hits
+                    ],
+                }
+            )
+
         _answer = self.generate(question, hits, history=history)
         return _answer, hits
 
