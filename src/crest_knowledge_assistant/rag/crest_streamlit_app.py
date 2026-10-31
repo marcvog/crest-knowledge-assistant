@@ -161,7 +161,15 @@ if question := st.chat_input("Ask a question about CREST..."):
                     )
 
                 trace.update(
-                    output={"answer": answer},
+                    output={
+                        "answer": answer,
+                        "actual_route": actual_route,
+                    },
+                    metadata={
+                        "selected_route": routed_query.pipeline,
+                        "actual_route": actual_route,
+                        "fallback_used": routed_query.pipeline != actual_route,
+                    },
                 )
 
         except Exception as exc:
