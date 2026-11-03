@@ -44,6 +44,11 @@ model = create_chat_model(
     model=llm_model,
 )
 
+prompt = langfuse.get_prompt("crest-rag-system")
+
+print("Version:", prompt.version)
+print("Content:", prompt.compile())
+
 
 class RAGPipeline:
     def __init__(self):
