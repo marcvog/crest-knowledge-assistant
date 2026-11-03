@@ -44,11 +44,6 @@ model = create_chat_model(
     model=llm_model,
 )
 
-prompt = langfuse.get_prompt("crest-rag-system")
-
-print("Version:", prompt.version)
-print("Content:", prompt.compile())
-
 
 class RAGPipeline:
     def __init__(self):
@@ -79,14 +74,8 @@ class RAGPipeline:
             for i, h in enumerate(hits)
         )
 
-        system = (
-            "You are an engineering assistant answering questions about the "
-            "CREST software project. "
-            "Use only the retrieved context to answer the user's question. "
-            "When you use information from a source, cite it inline like [1] or [2]. "
-            "If the retrieved context does not contain enough information to answer "
-            "the question, say so rather than guessing."
-        )
+        prompt = langfuse.get_prompt("crest-rag-system")
+        system = prompt.compile()
 
         messages = [
             {"role": "system", "content": system},
