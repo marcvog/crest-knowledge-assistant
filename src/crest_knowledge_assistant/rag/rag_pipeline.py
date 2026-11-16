@@ -93,7 +93,10 @@ class RAGPipeline:
             }
         )
 
-        return self.generator.generate(messages)
+        return self.generator.generate(
+            messages,
+            langfuse_prompt=prompt,
+        )
 
     def answer(
         self,
